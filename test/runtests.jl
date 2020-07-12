@@ -7,9 +7,9 @@ function test01()
   @info "Hamiltonian is:  H = -1/2μ⋅Δ + 1/2⋅k⋅r²"
   @info "Eigenvalues are: E = ħω⋅(2nᵣ + l + 3/2),"
   @info "where nᵣ = 0, 1, 2...; l = 0, 1, 2..., and ω² = k/μ"
-  rg   = radial_grid(301, -20.0, 5.0)
+  r, n, dx = radial_grid()
   conf = ((0,0,0,), (0,0,0), (0,0,0))
-  ψ = radial_shr_eq(rg, [1/2*r^2 for r in rg.r], conf).orbitals
+  ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals
   @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
   nlevels = length(collect(Iterators.flatten(conf)))
   ϵ_exact = zeros(nlevels)
@@ -33,14 +33,11 @@ function test02()
   @info "Hooke's atom"
   @info "https://en.wikipedia.org/wiki/Hooke's_atom"
   @info "An exact solution for Hooke's atom is E = 2.0 a.u."
-  @info "For the Slater Xα method α is adjustable parameter."
+  @info "For Slater Xα method α is adjustable parameter."
   @info "Here we reproduce exact Hooke atom energy with"
   @info "α = 0.83685294"  
-  rg = radial_grid(301)
-  E = lda(rg, conf = 2, 
-                xc = x -> Xα(x; α = 0.83685294), 
-                vp = [1/8 * r^2 for r in rg.r], 
-                 β = 0.8).energy
+  r, n, dx = radial_grid(301)
+  E = lda((r, n, dx), conf = 2, xc = x -> Xα(x; α = 0.83685294), vp = 1/8 * r.^2, β = 0.8).energy
   return E-2.0           
 end
 
@@ -59,7 +56,7 @@ function test03()
 end
 
 @testset "AtomEnergyLevels.jl" begin
-  @test test01() ≈ 0.0 atol = 5.0e-9
-  @test test02() ≈ 0.0 atol = 5.0e-7
-  @test test03() ≈ 0.0 atol = 5.0e-7
+  @test test01() ≈ 0.0 atol = 1e-10
+  @test test02() ≈ 0.0 atol = 5e-7
+  @test test03() ≈ 0.0 atol = 5e-7
 end

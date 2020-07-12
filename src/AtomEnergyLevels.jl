@@ -1,6 +1,6 @@
 module AtomEnergyLevels
 
-import LinearAlgebra: eigen, diag, diagind
+import LinearAlgebra: eigen, diag, diagind, Diagonal
 import Printf: @sprintf
 
 export radial_grid, laplacian, radial_shr_eq, TF, lda
@@ -12,10 +12,10 @@ include("periodic_table.jl")
 export atomic_shell, atomic_electron_configuration
 
 """
-    radial_grid(n = 401, xmin = -30, xmax = 20)
+    radial_grid(n = 501, xmin = -30, xmax = 20)
 
-Given a size `n`, computes a logarithmic grid on the radial coordinate
-from `r = exp(xmin)` to `exp(xmax)`, returning an object which contains 
+Given a size `n`, computes a logarithmic grid on the radial coordinate from 
+`r = exp(xmin)` to `exp(xmax)`, returning an object which contains 
 grid values (vector of size `n`), `n`, and step dx = dr / r.
 
 # Example
@@ -29,7 +29,7 @@ julia> n
 51
 ```
 """
-function radial_grid(n = 401, xmin = -30, xmax = 20)
+function radial_grid(n = 501, xmin = -30, xmax = 20)
   x = range(xmin, xmax, length = n)
   return (r = exp.(x), n = x.len, dx = x.step.hi)
 end
@@ -38,13 +38,9 @@ end
 """
     laplacian(n, h)
     
-Create matrix representation of the Laplace operator Δ = ∂²/∂x² 
-for the 1D Schrödinger equation (atomic units are assumed).
-
-H = -1/2μ*Δ + V(x)
+Returns n×n differentiation matrix Δ = ∂²/∂x².
     
-On input: `n` - size of grid, `h` - grid step.
-On output: n×n differentiation matrix Δ = ∂²/∂x².
+On input: `n` - size of a uniform grid with step size `h`.
 
 # Example
 
@@ -96,121 +92,108 @@ function laplacian(n, h)
   return Δ
 end
 
-# simple integration via rectangle rule
-∫(h, f) = h*sum(f)
+∫(h, f) = h*sum(f) # rectangle rule for integration is accurate enough
 
 """
-    radial_shr_eq(grid, V, conf, μ = 1.0)
+    radial_shr_eq(grid, V, conf, μ = 1.0, α = 1e5)
     
 Solve Schrödinger equation (atomic units are assumed)
 
 H = -1/2μ*Δ + V(r)
 
 for [the particle in a spherically symmetric potential.](https://en.wikipedia.org/wiki/Particle_in_a_spherically_symmetric_potential)
-Logarithmic radial `grid` created with `log_radial_grid()` function, potential `V` 
-calculated on the grid points and energy levels of interest (`conf` variable) should be 
-provided on input. As an optional parameter, the particle mass `μ` can be specified. 
 
-The function returns: sum of the one-particle energies, 
+On input:
 
-E = ∑εᵢ
+* `grid` - logarithmic radial grid (a tuple (r, n, dx)) created with `radial_grid` function 
+* `V`    - potential calculated on the grid points `r`
+* `conf` - energy levels of interest. 
 
-```julia
-    E = radial_shr_eq(grid, V, conf, μ).energy
+For example, to find the energy levels with quantum numbers nᵣ = 1, 2, 3 and l = 0, 1, 2, 
+the levels of interest should be included in the tuple `conf` of the electronic 
+configuration as follows:
+
+```
+#          l=0        l=1        l=2
+conf = ((1, 0, 0), (0, 0, 0), (0, 0, 0));
+#   nᵣ = 0, 1, 2;   0, 1, 2;   0, 1, 2;  
 ```
 
-the probability density
+where the number nᵢ in a tuple is population of level with particular quantum numbers nᵣ, l.
 
-ρ = ∑nᵢψ²ᵢ
+As optional parameters, the particle mass `μ` and the coefficient `α` can be specified. 
+Parameter `α` is used in the matrix pencil `H + α*Diagonal(r²)` for the generalized 
+eigenproblem solution.
 
-```julia
-    ρ = radial_shr_eq(grid, V, conf, μ).density
-```
- 
-according to the population nᵢ of levels listed in the `conf` tuple, 
-and a table of orbitals (values of the wavefunction ψᵢ(r) on the radial grid) 
-with corresponding eigenvalues εᵢ (energy levels), azimuthal and 
-radial quantum numbers (l, nᵣ), and populations of energy levels nᵢ.
+On output:
 
-```julia
-    ψ = radial_shr_eq(grid, V, conf, μ).orbitals
-```
-
-!!! note 
-
-    `log_radial_grid(...).orbitals` actually returns wavefunctions yᵢ(x), 
-    where x - uniform grid. The radial grid is `r = exp.(x)`. 
-    True radial wavefunction can be obtained by transformation `R = y ./ sqrt.(r)`.
+* sum of the one-particle energies: E = ∑nᵢ*εᵢ
+* particles density: ρ = 1/4π * ∑nᵢ*ψᵢ²(r)
+* matrix, containing complete set of orbitals (values of the wavefunctions ψᵢ(r) on the 
+  radial grid `r`, corresponding eigenvalues εᵢ (energy levels), azimuthal and 
+  radial quantum numbers l, nᵣ, and level populations nᵢ (as listed in `conf`). 
 
 # Examples
 ## 3D isotropic harmonic oscillator problem
 
 ```https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator```
 
-To find the energy levels with quantum numbers nᵣ = 1, 2, 3 and l = 0, 1, 2, 
-the levels of interest should be included in the tuple of the electronic configuration 
-as follows
+Exact eigenvalues are: E = ħω*(2nᵣ + l + 3/2). 
+The numerical solution is following.
 
-```julia
-#          l=0        l=1        l=2
-conf = ((0, 0, 0), (0, 0, 0), (0, 0, 0));
-#   nᵣ = 0, 1, 2;   0, 1, 2;   0, 1, 2;  
-```
-where the tuples `(0,0,0)` indicate population numbers of each shell.
-
-The output should be a matrix
-
-```julia
-3×9 Array{Float64,2}:
- 0.0  0.0  0.0  1.0  1.0  1.0  2.0  2.0  2.0  # azimuthal quantum numbers, l
- 0.0  1.0  2.0  0.0  1.0  2.0  0.0  1.0  2.0  # radial quantum numbers, nᵣ
- 1.5  3.5  5.5  2.5  4.5  6.5  3.5  5.5  7.5  # energy levels
-```
-Exact eigenvalues are: E = ħω*(2nᵣ + l + 3/2). The numerical solution
-is:
 ```julia-repl
 julia> r, n, dx = radial_grid(301, -20, 5);
 
-julia> conf = ((0,0,0,), (0,0,0), (0,0,0));
+julia> conf = ((1,0,0,), (0,0,0), (0,0,0));
 
 julia> ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals;
 
 julia> ψ[1:3,:]
 3×9 Array{Float64,2}:
- 0.0  0.0  0.0  1.0  1.0  1.0  2.0  2.0  2.0
- 0.0  1.0  2.0  0.0  1.0  2.0  0.0  1.0  2.0
- 1.5  3.5  5.5  2.5  4.5  6.5  3.5  5.5  7.5
+ 0.0  0.0  0.0  1.0  1.0  1.0  2.0  2.0  2.0  # azimuthal quantum numbers, l
+ 0.0  1.0  2.0  0.0  1.0  2.0  0.0  1.0  2.0  # radial quantum numbers, nᵣ
+ 1.5  3.5  5.5  2.5  4.5  6.5  3.5  5.5  7.5  # energy levels
 ```
-## Hydrogen-like atom
 
-```https://en.wikipedia.org/wiki/Hydrogen-like_atom```
+## Hydrogen atom
+
+```https://en.wikipedia.org/wiki/Hydrogen_atom```
 
 Hamiltonian of the particle is:  
 
-H = -1/2μ*Δ - Z/r
+H = -1/2*Δ - 1/r
 
 and exact solution is:
 
-E = -μ*Z²/2n²
+E = -1/2(nᵣ + l + 1)², R1s(r) = 2*exp(-r)
 
 ```julia-repl
-julia> (r, n, dx) = radial_grid(500, -30, 10);
+julia> (r, n, dx) = radial_grid();
 
-julia> ψ = radial_shr_eq((r, n, dx), -2 ./ r, 1, 0.25).orbitals;
+julia> result = radial_shr_eq((r, n, dx), -1 ./ r, 1);
 
-julia> ψ[1:3,:]
-3×1 Array{Float64,2}:
-  0.0
-  0.0
- -0.5000000000007793
+julia> result.energy
+-0.5000000000310655
+
+julia> ρ = result.density;
+
+julia> 4π * dx * sum(ρ .* r .^3)
+0.9999999999999998
+
+julia> R1s = -result.orbitals[5:end,1];
+
+julia> R1s_exact = 2*exp.(-r);
+
+julia> dx * sum((R1s .- R1s_exact).^2 .* r .^3)
+9.313469540251104e-22
 ```
 """
-function radial_shr_eq(grid, V, conf, μ = 1.0)
+function radial_shr_eq(grid, V, conf; μ = 1.0, α = 1e5)
   r, n, dx = grid
   r² = r .* r
   
   H = -1/2μ*laplacian(n, dx)
-  for i=1:n H[i,:] ./= r²[i] end
+  S = Matrix(Diagonal(r²))
   T = diag(H);
   
   ρ = zeros(n)
@@ -220,9 +203,10 @@ function radial_shr_eq(grid, V, conf, μ = 1.0)
 
   for (l, subshell) in enumerate(conf)
 
-    H[diagind(H, 0)] = T + V .+ 1/2μ * (l - 1/2)^2 ./ r²
-    ε, y = eigen(H, sortby=real)
-
+    H[diagind(H, 0)] = T + V .* r² .+ 1/2μ * (l - 1/2)^2
+    θ, y = eigen(H, H + α*S)
+    ε = α*θ ./ (1 .- θ)
+          
     for (i, occ) in enumerate(subshell)
       # normalize wavefunctions
       y[:, i] *= 1.0 / sqrt(∫(dx, y[:, i] .^ 2 .* r²))
@@ -233,12 +217,12 @@ function radial_shr_eq(grid, V, conf, μ = 1.0)
       # calculate total energy
       E += occ * ε[i]
 
-      # write results to the matrix
-      ψ[1, k] = l-1          # azimuthal quantum number
-      ψ[2, k] = i-1          # radial quantum number
-      ψ[3, k] = ε[i]         # energy level
-      ψ[4, k] = occ          # occupation
-      ψ[5:end, k] = y[:, i]  # orbital
+      # save results
+      ψ[1, k] = l-1                       # azimuthal quantum number
+      ψ[2, k] = i-1                       # radial quantum number
+      ψ[3, k] = ε[i]                      # level energy
+      ψ[4, k] = occ                       # level occupation
+      ψ[5:end, k] = y[:, i] ./ sqrt.(r)   # orbital
       k += 1
     end
   end
@@ -246,7 +230,7 @@ function radial_shr_eq(grid, V, conf, μ = 1.0)
 end
 
 """
-    `TF(r, Z)`
+    TF(r, Z)
     
 Approximate solution to the Thomas-Fermi equation for neutral atom with nuclear charge `Z`.
 Returns density at the distance `r`.
@@ -263,7 +247,6 @@ julia> (r, n, dx) = radial_grid(400, -30, 20);
 
 julia> 4π * dx * sum(TF.(r, 86) .* r .^3)
 85.99999999999687
-
 ```
 """
 function TF(r, Z)
@@ -273,14 +256,16 @@ function TF(r, Z)
                      B[3]*β[3]^2*exp(-β[3]*r/b))
 end
 
-function radial_shr_eq!(grid, V, conf, H, ρ, ψ, μ = 1.0)
+function radial_shr_eq!(grid, V, conf, H, T, S, ρ, ψ; μ = 1.0, α = 1e5) 
   r, n, dx = grid
   r² = r .* r
-  T = diag(H)
   k = 1; E = 0.0; ρ .= 0.0
   for (l, subshell) in enumerate(conf)
-    H[diagind(H, 0)] = T + V .+ 1/2μ * (l - 1/2)^2 ./ r²
-    ε, y = eigen(H, sortby=real)
+      
+    H[diagind(H, 0)] = T + V .* r² .+ 1/2μ * (l - 1/2)^2
+    θ, y = eigen(H, H + α*S)
+    ε = α*θ ./ (1 .- θ)
+
     for (i, occ) in enumerate(subshell)
       y[:, i] *= 1 / sqrt(∫(dx, y[:, i] .^ 2 .* r²))
       ρ .+= occ / 4π * y[:, i] .^ 2 ./ r
@@ -289,7 +274,7 @@ function radial_shr_eq!(grid, V, conf, H, ρ, ψ, μ = 1.0)
       ψ[2, k] = i-1
       ψ[3, k] = ε[i]
       ψ[4, k] = occ
-      ψ[5:end, k] = y[:, i]
+      ψ[5:end, k] = y[:, i] ./ sqrt.(r)
       k += 1
     end
   end
@@ -306,31 +291,32 @@ end
 
 """
 ```julia
-    lda(grid = radial_grid(401, -30, 20);
+    lda(grid = radial_grid(501, -30, 20);
            Z = nothing, 
         conf = nothing,
           xc = SVWN,
           vp = nothing,
         ρ_in = nothing,
            β = 0.3,
-          δn = 1.0e-6,
-          δE = 0.5e-6
-       maxit = 50)
+          δn = 5.0e-7,
+          δE = 1.0e-7,
+       maxit = 100)
 ```
-
-Solve DFT Kohn-Sham Self-Consistent Field equations for an atom.
+Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using 
+[local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-density_approximation)
 
 On input:
 
 * `grid`   - radial grid
+   (default is r::501-element Array{Float64,1}, n = 501, dx = 0.1)
 * `Z`      - nuclear charge (optional)
 * `conf`   - electronic configuration 
    (optional, but `Z` and/or `conf` must be provided anyway)
 * `xc`     - LDA exchange-correlation functional 
-   (some function f(ρ), default is S.H. Vosko, L. Wilk, and M. Nusair functional, SVWN)
+   (default is S.H. Vosko, L. Wilk, and M. Nusair functional, SVWN(ρ))
 *  `vp`    - external potential 
    (default is Coulomb potential `vp = -Z/r`)
-*  `ρ_in`  - initial density 
+*  `ρ_in`  - input density 
    (default is Thomas-Fermi density)
 *  `β`     - density mixing parameter
    (default is `β = 0.3` which almost guarantees convergence)
@@ -339,38 +325,38 @@ On input:
 *  `δE`    - energy convergence criterion 
    (default is `δE = 5.0e-7`)     
 *  `maxit` - maximum permissible number of SCF iterations
-   (optional, default is `maxit = 50`, enough for most tasks)
+   (optional, default is `maxit = 100`, enough for most tasks)
 
-On output function returns:
+On output:
 
 *  `lda(...).energy`   - total energy, a.u.
-*  `lda(...).density`  - density ρ(r), array size `n`, where
-    `n` - radial grid size
-*  `lda(...).orbitals` - table of orbitals (values of the 
-    wavefunction ψᵢ(r) on the radial grid) with corresponding 
-    eigenvalues εᵢ (energy levels), azimuthal and radial quantum 
-    numbers (l, nᵣ), and populations nᵢ.
+*  `lda(...).density`  - electron density ρ(r) = 1/4π * ∑nᵢ*ψᵢ²(r)
+*  `lda(...).orbitals` - matrix, containing complete set of orbitals 
+    (values of the wavefunctions ψᵢ(r) on the radial grid `r`, 
+    corresponding eigenvalues εᵢ (energy levels), azimuthal and 
+    radial quantum numbers l, nᵣ, and level populations nᵢ (as listed in `conf`). 
 
 # Example
 ## Helium
 ```julia-repl
 julia> lda(Z = 2, β = 0.8).energy;
 [ Info: Neutral atom with Z =  2 and He electron configuration is assumed.
-[ Info: Using logarithmic 401 point grid and step dx = 0.1250
+[ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
 ┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000 
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+└       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
-[ Info:   0	     -3.231952	    1.518588
-[ Info:   1	     -2.838866	    0.275166
-[ Info:   2	     -2.843659	    0.048131
+[ Info:   0	     -3.231952	    1.517742
+[ Info:   1	     -2.838866	    0.275522
+[ Info:   2	     -2.843659	    0.048204
 [ Info:   3	     -2.835333	    0.009764
-[ Info:   4	     -2.835105	    0.001849
+[ Info:   4	     -2.835105	    0.001852
 [ Info:   5	     -2.834863	    0.000380
 [ Info:   6	     -2.834844	    0.000076
 [ Info:   7	     -2.834837	    0.000016
 [ Info:   8	     -2.834836	    0.000003
 [ Info:   9	     -2.834836	    0.000001
+[ Info:  10	     -2.834836	    0.000000
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               2.767922
 │       ELECTRON-ELECTRON              1.996120
@@ -381,25 +367,25 @@ julia> lda(Z = 2, β = 0.8).energy;
 ```
 ## Lithium atom EA and IP
 Electron affinity and ionization potential for an atom can be calculated 
-using Slater Transition State approach.
+using Slater-Janak transition state.
 ```julia-repl
 julia> const ev = 27.21138400
 27.211384
 
 julia> EA = -lda(Z = 3, conf = ((2, 1.5),()), β = 0.8).orbitals[3,end]*ev
-[ Info: Using logarithmic 401 point grid and step dx = 0.1250
+[ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
 ┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000 
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+└       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
-[ Info:   0	     -6.539026	    3.615572
-[ Info:   1	     -7.959516	    2.552225
-[ Info:   2	     -7.352136	    0.795066
-[ Info:   3	     -7.361211	    0.204677
-[ Info:   4	     -7.367748	    0.036300
-[ Info:   5	     -7.367463	    0.007819
-[ Info:   6	     -7.367563	    0.001583
-[ Info:   7	     -7.367568	    0.000356
+[ Info:   0	     -6.539026	    3.619811
+[ Info:   1	     -7.959516	    2.552724
+[ Info:   2	     -7.352136	    0.792187
+[ Info:   3	     -7.361211	    0.205290
+[ Info:   4	     -7.367748	    0.036280
+[ Info:   5	     -7.367463	    0.007823
+[ Info:   6	     -7.367563	    0.001581
+[ Info:   7	     -7.367568	    0.000355
 [ Info:   8	     -7.367572	    0.000081
 [ Info:   9	     -7.367573	    0.000020
 [ Info:  10	     -7.367573	    0.000005
@@ -412,26 +398,27 @@ julia> EA = -lda(Z = 3, conf = ((2, 1.5),()), β = 0.8).orbitals[3,end]*ev
 │       ELECTRON-NUCLEAR             -17.248303
 │       TOTAL ENERGY                  -7.367573
 └       VIRIAL RATIO                   2.014205
-0.7269491136274684
+0.7269491150354416
 
 julia> IP = -lda(Z = 3, conf = ((2, 0.5),()), β = 0.8).orbitals[3,end]*ev
-[ Info: Using logarithmic 401 point grid and step dx = 0.1250
+[ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
 ┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000 
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+└       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
-[ Info:   0	     -8.080241	    1.624665
-[ Info:   1	     -7.297013	    0.316713
-[ Info:   2	     -7.261408	    0.082944
-[ Info:   3	     -7.259677	    0.021616
-[ Info:   4	     -7.259888	    0.005624
-[ Info:   5	     -7.260061	    0.001467
+[ Info:   0	     -8.080241	    1.621832
+[ Info:   1	     -7.297013	    0.316934
+[ Info:   2	     -7.261408	    0.082710
+[ Info:   3	     -7.259677	    0.021497
+[ Info:   4	     -7.259888	    0.005607
+[ Info:   5	     -7.260061	    0.001463
 [ Info:   6	     -7.260127	    0.000381
 [ Info:   7	     -7.260148	    0.000099
-[ Info:   8	     -7.260154	    0.000025
+[ Info:   8	     -7.260154	    0.000026
 [ Info:   9	     -7.260155	    0.000007
 [ Info:  10	     -7.260156	    0.000002
 [ Info:  11	     -7.260156	    0.000000
+[ Info:  12	     -7.260156	    0.000000
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               7.168653
 │       ELECTRON-ELECTRON              3.619145
@@ -439,7 +426,7 @@ julia> IP = -lda(Z = 3, conf = ((2, 0.5),()), β = 0.8).orbitals[3,end]*ev
 │       ELECTRON-NUCLEAR             -16.459388
 │       TOTAL ENERGY                  -7.260156
 └       VIRIAL RATIO                   2.012764
-5.316382271361109
+5.316382601516975
 ```
 Experimental values are: IP = 5.39 eV, EA = 0.62 eV.
 
@@ -449,29 +436,27 @@ Experimental values are: IP = 5.39 eV, EA = 0.62 eV.
 An exact solution for Hooke's atom is E = 2.0 a.u.
 
 ```julia-repl
-julia> r, n, dx = radial_grid(301);
-
-julia> lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
+julia> lda(conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
 [ Info: Neutral atom with Z =  2 is assumed.
-[ Info: Using logarithmic 301 point grid and step dx = 0.1667
+[ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
 ┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000 
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+└       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
-[ Info:   0	      2.103849	    1.896284
-[ Info:   1	      2.013080	    0.358056
-[ Info:   2	      2.022087	    0.074260
-[ Info:   3	      2.025397	    0.014855
-[ Info:   4	      2.026076	    0.003008
-[ Info:   5	      2.026201	    0.000622
-[ Info:   6	      2.026224	    0.000131
+[ Info:   0	      2.103849	    1.895566
+[ Info:   1	      2.013080	    0.357780
+[ Info:   2	      2.022087	    0.073897
+[ Info:   3	      2.025397	    0.014779
+[ Info:   4	      2.026076	    0.003000
+[ Info:   5	      2.026201	    0.000621
+[ Info:   6	      2.026224	    0.000130
 [ Info:   7	      2.026228	    0.000028
 [ Info:   8	      2.026229	    0.000006
 [ Info:   9	      2.026229	    0.000001
 [ Info:  10	      2.026229	    0.000000
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               0.627459
-│       ELECTRON-ELECTRON              1.022578
+│       ELECTRON-ELECTRON              1.022579
 │       EXCHANGE-CORRELATION          -0.523773 
 │       ELECTRON-NUCLEAR               0.899965
 │       TOTAL ENERGY                   2.026229
@@ -480,7 +465,6 @@ julia> lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
 Compare with exact Kohn-Sham values from Table II of S. Kais et al 
 // Density functionals and dimensional renormalization for an exactly solvable model, 
 JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
-
 ```
         ELECTRON KINETIC               0.6352 
         ELECTRON-ELECTRON              1.0320 
@@ -490,16 +474,16 @@ JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
         VIRIAL RATIO                  -2.1486
 ```
 """
-function lda(grid = radial_grid();
+function lda(grid = radial_grid(501, -30, 20);
                 Z = nothing, 
              conf = nothing,
                xc = SVWN,
                vp = nothing,
              ρ_in = nothing,
                 β = 0.3,
-               δn = 1.0e-6,
-               δE = 5.0e-7,
-            maxit = 50)
+               δn = 5.0e-7,
+               δE = 1.0e-7,
+            maxit = 100)
   
   if Z == nothing && conf == nothing 
     @error "System is not specified: provide ether atomic number Z 
@@ -548,7 +532,9 @@ function lda(grid = radial_grid();
   ψ = zeros(n + 4, nlevels)
 
   Δ = laplacian(n, dx)
-  H = -1/2*Δ; for i=1:n H[i,:] ./= r²[i] end
+  H = -1/2*Δ
+  S = Matrix(Diagonal(r²))
+
   T = diag(H)
   Δ[diagind(Δ, 0)] .-= 1/4;
 
@@ -565,8 +551,8 @@ function lda(grid = radial_grid();
    
     # apply boundary conditions for vh at r → 0 and r → ∞
    
-    vh .-= (vh[end] - Q / sqr[end])/sqr[end] .* sqr .+
-           (vh[  1] - Q * sqr[  1])*sqr[  1] ./ sqr
+    vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
+           (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
     vh ./= sqr
    
     # calculate DFT exchange-correlation potential vxc and energy density εxc
@@ -583,7 +569,7 @@ function lda(grid = radial_grid();
     # and one-particle energy ev_sum
    
     H[diagind(H, 0)] = T
-    ev_sum = radial_shr_eq!(grid, V, conf, H, ρ_out, ψ)
+    ev_sum = radial_shr_eq!(grid, V, conf, H, T, S, ρ_out, ψ)
    
     # DFT total energy:
     # see https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy

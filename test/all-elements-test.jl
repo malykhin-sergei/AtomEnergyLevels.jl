@@ -25,9 +25,8 @@ ENIST = [   -0.445671;     -2.834836;     -7.335195;    -14.447209;    -24.34419
 using AtomEnergyLevels
 using Test, Printf
 
-function test_all()
-  N = length(ENIST)
-  E = zeros(N) 
+function test_all(N = length(ENIST))
+  E = zeros(N)
   for at_number=1:N
     element = keys(atomic_electron_configuration)[at_number]
     @info "Calculating $element:"
@@ -48,100 +47,3 @@ function test_all()
     @info @sprintf("%2s: ΔE = %+e", element, ENIST[Z]-E[Z])
   end  
 end
-
-#=
-[ Info: == RESULTS SUMMARY ==
-[ Info:  H: ΔE = -4.825849e-07
-[ Info: He: ΔE = -3.773020e-07
-[ Info: Li: ΔE = +1.885772e-07
-[ Info: Be: ΔE = +4.739539e-07
-[ Info:  B: ΔE = +1.026720e-07
-[ Info:  C: ΔE = -4.641473e-07
-[ Info:  N: ΔE = +1.392992e-07
-[ Info:  O: ΔE = -1.956511e-07
-[ Info:  F: ΔE = +1.081396e-07
-[ Info: Ne: ΔE = +2.685419e-07
-[ Info: Na: ΔE = +3.087938e-07
-[ Info: Mg: ΔE = +3.143902e-07
-[ Info: Al: ΔE = +4.059358e-07
-[ Info: Si: ΔE = -3.976903e-07
-[ Info:  P: ΔE = -4.026344e-08
-[ Info:  S: ΔE = -4.999658e-07
-[ Info: Cl: ΔE = +4.915568e-07
-[ Info: Ar: ΔE = -8.318011e-08
-[ Info:  K: ΔE = -2.904915e-07
-[ Info: Ca: ΔE = -3.886527e-07
-[ Info: Sc: ΔE = +3.623470e-07
-[ Info: Ti: ΔE = -1.119326e-07
-[ Info:  V: ΔE = +3.112017e-07
-[ Info: Cr: ΔE = -4.147864e-08
-[ Info: Mn: ΔE = +4.454487e-07
-[ Info: Fe: ΔE = -1.634728e-07
-[ Info: Co: ΔE = +1.986248e-07
-[ Info: Ni: ΔE = -3.038651e-07
-[ Info: Cu: ΔE = -1.411345e-07
-[ Info: Zn: ΔE = -3.286452e-07
-[ Info: Ga: ΔE = -1.312649e-07
-[ Info: Ge: ΔE = -6.353412e-08
-[ Info: As: ΔE = +4.522440e-07
-[ Info: Se: ΔE = +1.660305e-07
-[ Info: Br: ΔE = -1.467338e-07
-[ Info: Kr: ΔE = +4.020594e-07
-[ Info: Rb: ΔE = +3.240161e-07
-[ Info: Sr: ΔE = +3.584414e-07
-[ Info:  Y: ΔE = -2.323027e-07
-[ Info: Zr: ΔE = -1.045250e-07
-[ Info: Nb: ΔE = -2.323941e-08
-[ Info: Mo: ΔE = +2.575384e-07
-[ Info: Tc: ΔE = +2.610768e-07
-[ Info: Ru: ΔE = +1.888957e-07
-[ Info: Rh: ΔE = -5.547354e-07
-[ Info: Pd: ΔE = -3.359319e-07
-[ Info: Ag: ΔE = -3.742452e-07
-[ Info: Cd: ΔE = -4.515005e-08
-[ Info: In: ΔE = -5.496395e-07
-[ Info: Sn: ΔE = -1.398103e-07
-[ Info: Sb: ΔE = -1.468561e-07
-[ Info: Te: ΔE = +2.745874e-07
-[ Info:  I: ΔE = -2.020943e-07
-[ Info: Xe: ΔE = -5.579741e-07
-[ Info: Cs: ΔE = -3.086016e-07
-[ Info: Ba: ΔE = -7.467042e-08
-[ Info: La: ΔE = -2.223151e-07
-[ Info: Ce: ΔE = -1.469998e-07
-[ Info: Pr: ΔE = -2.569850e-07
-[ Info: Nd: ΔE = -3.546229e-07
-[ Info: Pm: ΔE = +2.059005e-07
-[ Info: Sm: ΔE = -4.220838e-07
-[ Info: Eu: ΔE = -4.312333e-07
-[ Info: Gd: ΔE = +1.065309e-07
-[ Info: Tb: ΔE = -2.803372e-07
-[ Info: Dy: ΔE = +3.004407e-07
-[ Info: Ho: ΔE = +1.368790e-07
-[ Info: Er: ΔE = -1.903045e-07
-[ Info: Tm: ΔE = -3.280365e-07
-[ Info: Yb: ΔE = +1.912740e-07
-[ Info: Lu: ΔE = -5.482034e-07
-[ Info: Hf: ΔE = +2.027809e-08
-[ Info: Ta: ΔE = -3.143068e-07
-[ Info:  W: ΔE = -1.371791e-07
-[ Info: Re: ΔE = +2.109100e-07
-[ Info: Os: ΔE = +2.784636e-07
-[ Info: Ir: ΔE = -7.087801e-07
-[ Info: Pt: ΔE = -3.284476e-07
-[ Info: Au: ΔE = -5.660950e-07
-[ Info: Hg: ΔE = -2.111010e-07
-[ Info: Tl: ΔE = +1.368026e-07
-[ Info: Pb: ΔE = -3.709865e-07
-[ Info: Bi: ΔE = -4.356298e-07
-[ Info: Po: ΔE = +1.854714e-07
-[ Info: At: ΔE = -1.899498e-07
-[ Info: Rn: ΔE = -2.945744e-07
-[ Info: Fr: ΔE = -6.667688e-07
-[ Info: Ra: ΔE = -2.192173e-07
-[ Info: Ac: ΔE = -7.238996e-07
-[ Info: Th: ΔE = -1.004701e-07
-[ Info: Pa: ΔE = -9.101495e-08
-[ Info:  U: ΔE = -3.833484e-07
-=#
-    
