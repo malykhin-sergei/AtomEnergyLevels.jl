@@ -436,6 +436,8 @@ Experimental values are: IP = 5.39 eV, EA = 0.62 eV.
 An exact solution for Hooke's atom is E = 2.0 a.u.
 
 ```julia-repl
+julia> r, n, dx = radial_grid();
+
 julia> lda(conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
 [ Info: Neutral atom with Z =  2 is assumed.
 [ Info: Using logarithmic 501 point grid and step dx = 0.1000
