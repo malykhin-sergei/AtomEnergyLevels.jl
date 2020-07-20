@@ -1,7 +1,7 @@
 name = "AtomEnergyLevels"
 uuid = "0e2796e3-4c26-48b9-bb94-e3812f23ed41"
 authors = ["Sergei Malykhin <s.e.malykhin@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

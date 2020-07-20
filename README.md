@@ -1,6 +1,6 @@
 # AtomEnergyLevels
 
-Solve numerically 
+Solve numerically
 
  1. 1D [Schrödinger equation](https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation) by the [spectral collocation (i.e., pseudospectral) method](https://en.wikipedia.org/wiki/Collocation_method)
  2. Schrödinger equation for the [particle in a spherically symmetric potential](https://en.wikipedia.org/wiki/Particle_in_a_spherically_symmetric_potential)
@@ -10,7 +10,7 @@ Solve numerically
 
 ### Morse potential
 
-Using the following code, one can find the vibrational levels of the radical OH⋅, 
+Using the following code, one can find the vibrational levels of the radical OH⋅,
 for which the potential energy surface is approximated through the Morse potential.
 
 The bulk of the calculations were performed by the Laplacian function.
@@ -39,8 +39,8 @@ The bulk of the calculations were performed by the Laplacian function.
 Using the following code, one can find the energy levels for a
 [spherically-symmetric three-dimensional harmonic oscillator.](https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator)
 
-To find the energy levels with quantum numbers nᵣ = 1, 2, 3 and l = 0, 1, 2, 
-the levels of interest should be included in the tuple of the 
+To find the energy levels with quantum numbers nᵣ = 1, 2, 3 and l = 0, 1, 2,
+the levels of interest should be included in the tuple of the
 electronic configuration as follows
 
 ```
@@ -77,7 +77,7 @@ julia> result = lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8);
 [ Info: Neutral atom with Z =  2 is assumed.
 [ Info: Using logarithmic 501 point grid and step dx = 0.0640
 [ Info: Using Thomas-Fermi starting electron density
-┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000 
+┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000
 └       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
 [ Info:   0	      2.108127	    1.781135
@@ -94,7 +94,7 @@ julia> result = lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8);
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               0.627459
 │       ELECTRON-ELECTRON              1.022827
-│       EXCHANGE-CORRELATION          -0.523773 
+│       EXCHANGE-CORRELATION          -0.523773
 │       ELECTRON-NUCLEAR               0.899965
 │       TOTAL ENERGY                   2.026478
 └       VIRIAL RATIO                  -2.229656
@@ -116,7 +116,7 @@ julia> @time result = lda(Z = 92, β = 0.5);
 [ Info: Neutral atom with Z = 92 and U electron configuration is assumed.
 [ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
-┌ Info: Starting SCF procedure with density mixing parameter β = 0.5000 
+┌ Info: Starting SCF procedure with density mixing parameter β = 0.5000
 └       and convergence threshold |Δρ| ≤ 5.000000e-07
 [ Info: cycle		energy		|Δρ|
 [ Info:   0	 -25892.940688	   13.946827
@@ -150,7 +150,7 @@ julia> @time result = lda(Z = 92, β = 0.5);
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC           25651.231179
 │       ELECTRON-ELECTRON           9991.594177
-│       EXCHANGE-CORRELATION        -425.032628 
+│       EXCHANGE-CORRELATION        -425.032628
 │       ELECTRON-NUCLEAR          -60876.210617
 │       TOTAL ENERGY              -25658.417889
 └       VIRIAL RATIO                   2.000280
@@ -161,7 +161,7 @@ julia> ψ = ψ[:, p];
 julia> for (i, ϵᵢ) in enumerate(ψ[3,:])
        l, nᵣ, nᵢ = ψ[1, i], ψ[2, i], ψ[4, i]
        n = nᵣ + l + 1
-       @printf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l+1], nᵢ, ϵᵢ)
+       @printf("\t%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l+1], nᵢ, ϵᵢ)
        end
 	1S	( 2.0)	  -3689.355140
 	2S	( 2.0)	   -639.778728
