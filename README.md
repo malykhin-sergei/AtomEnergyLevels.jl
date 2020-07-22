@@ -100,6 +100,9 @@ plot(r, ρₑ, label = "exact"); plot(r, result.density, label = "LDA");
 
 ### Uranium atom
 
+Compare with NIST [Atomic Reference Data for Electronic Structure
+Calculations, Uranium](https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-90)
+
 ```julia
 using AtomEnergyLevels, Printf
 
