@@ -3,36 +3,13 @@ module AtomEnergyLevels
 import LinearAlgebra: eigen!, diagind, Diagonal
 import Printf: @sprintf
 
-export radial_grid, laplacian, radial_shr_eq, TF, lda
+export laplacian, radial_shr_eq, TF, lda
 
 include("dft_xc_functionals.jl")
 export Xα, SVWN
 
 include("periodic_table.jl")
 export atomic_shell, atomic_electron_configuration
-
-"""
-    radial_grid(n = 501, xmin = -30, xmax = 20)
-
-Given a size `n`, computes a logarithmic grid on the radial coordinate from
-`r = exp(xmin)` to `exp(xmax)`, returning an object which contains
-grid values (vector of size `n`), `n`, and step dx = dr / r.
-
-# Example
-```julia-repl
-julia> r, n, dx = radial_grid(51);
-
-julia> r[end]-r[1]*exp((n-1)*dx)
-0.0
-
-julia> n
-51
-```
-"""
-function radial_grid(n = 501, xmin = -30, xmax = 20)
-  x = range(xmin, xmax, length = n)
-  return (r = exp.(x), n = x.len, dx = x.step.hi)
-end
 
 """
     laplacian(n, h)
@@ -104,7 +81,7 @@ for [the particle in a spherically symmetric potential.](https://en.wikipedia.or
 
 On input:
 
-* `grid` - logarithmic radial grid (a tuple (r, n, dx)) created with `radial_grid` function
+* `grid` - logarithmic radial grid (a tuple (r, n, dx))
 * `V`    - potential calculated on the grid points `r`
 * `conf` - energy levels of interest.
 
@@ -141,7 +118,10 @@ Exact eigenvalues are: E = ħω*(2nᵣ + l + 3/2).
 The numerical solution is following.
 
 ```julia-repl
-julia> r, n, dx = radial_grid(301, -20, 5);
+julia> r, n, dx = begin
+           x = range(-30, 20, length = 501)
+           exp.(x), x.len, x.step.hi
+       end;
 
 julia> conf = ((1,0,0,), (0,0,0), (0,0,0));
 
@@ -167,7 +147,10 @@ and exact solution is:
 E = -1/2(nᵣ + l + 1)², R1s(r) = 2*exp(-r)
 
 ```julia-repl
-julia> (r, n, dx) = radial_grid();
+julia> r, n, dx = begin
+           x = range(-30, 20, length = 501)
+           exp.(x), x.len, x.step.hi
+       end;
 
 julia> result = radial_shr_eq((r, n, dx), -1 ./ r, 1);
 
@@ -187,8 +170,7 @@ julia> dx * sum((R1s .- R1s_exact).^2 .* r .^3)
 9.313469540251104e-22
 ```
 """
-function radial_shr_eq(grid, V, conf; μ = 1.0, α = 1e5)
-  r, n, dx = grid
+function radial_shr_eq((r, n, dx), V, conf; μ = 1.0, α = 1e5)
   r² = r .* r
 
   H = -1/2μ*laplacian(n, dx) + Diagonal(V .* r²)
@@ -240,10 +222,13 @@ Zeitschrift für Naturforschung A, 2(3), 133-145.
 
 # Example
 ```julia-repl
-julia> (r, n, dx) = radial_grid(400, -30, 20);
+julia> r, n, dx = begin
+           x = range(-30, 20, length = 501)
+           exp.(x), x.len, x.step.hi
+       end;
 
 julia> 4π * dx * sum(TF.(r, 86) .* r .^3)
-85.99999999999687
+85.99999999999511
 ```
 """
 function TF(r, Z)
@@ -255,23 +240,27 @@ end
 
 """
 ```julia
-    lda(grid = radial_grid(501, -30, 20);
-           Z = nothing,
-        conf = nothing,
-          xc = SVWN,
-          vp = nothing,
-        ρ_in = nothing,
-           β = 0.3,
-          δn = 5.0e-7,
-          δE = 1.0e-7,
-       maxit = 100)
+function lda((r, n, dx) = begin
+                x = range(-30, 20, length = 501);
+                    exp.(x), x.len, x.step.hi end;
+                Z = nothing,
+             conf = nothing,
+               xc = SVWN,
+               vp = nothing,
+             ρ_in = nothing,
+                β = 0.3,
+               δn = 1.0e-6,
+               δE = 5.0e-7,
+            maxit = 100,
+                μ = 1,
+                α = 1e5)
 ```
 Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using
 [local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-density_approximation)
 
 On input:
 
-* `grid`   - radial grid
+* `(r, n, dx)` - radial grid, dr = r * dx
    (default is r::501-element Array{Float64,1}, n = 501, dx = 0.1)
 * `Z`      - nuclear charge (optional)
 * `conf`   - electronic configuration
@@ -400,7 +389,10 @@ Experimental values are: IP = 5.39 eV, EA = 0.62 eV.
 An exact solution for Hooke's atom is E = 2.0 a.u.
 
 ```julia-repl
-julia> r, n, dx = radial_grid();
+julia> r, n, dx = begin
+    x = range(-30, 20, length = 501)
+    exp.(x), x.len, x.step.hi
+end;
 
 julia> lda(conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
 [ Info: Neutral atom with Z =  2 is assumed.
@@ -440,7 +432,9 @@ JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
         VIRIAL RATIO                  -2.1486
 ```
 """
-function lda((r, n, dx) = radial_grid(501, -30, 20);
+function lda((r, n, dx) = begin
+                x = range(-30, 20, length = 501);
+                    exp.(x), x.len, x.step.hi end;
                 Z = nothing,
              conf = nothing,
                xc = SVWN,
@@ -455,27 +449,12 @@ function lda((r, n, dx) = radial_grid(501, -30, 20);
 
   # Check input parameters
   if Z == nothing && conf == nothing
-    @error "System is not specified: provide ether atomic number Z
-       or/and electron configuration.
-
-       Examples:
-       --------
-
-       # Helium
-       lda(Z = 2)
-       # Neon
-       lda(conf = atomic_electron_configuration[:Ne])
-       # Li+
-       lda(Z = 3, conf = atomic_electron_configuration[:He])
-       # He 1s1 2s1 excited state
-       lda(Z = 2, conf = ((1, 1), ())"
+    @error "System is not specified: provide ether atomic number Z or/and electron configuration."
     return (energy = nothing, density = nothing, orbitals = nothing)
-
   elseif Z == nothing
     Q = sum(Iterators.flatten(conf))
-    Z  = Q
+    Z = Q
     @info @sprintf("Neutral atom with Z = %2i is assumed.", Z)
-
   elseif conf == nothing
     conf = atomic_electron_configuration[Z]
     Q = Z
@@ -486,7 +465,7 @@ function lda((r, n, dx) = radial_grid(501, -30, 20);
   end
 
   r² = r .* r; r³ = r² .* r; sqr = sqrt.(r)
-  @info @sprintf("Using logarithmic %3i point grid and step dx = %5.4f", n, dx)
+  @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
   if vp == nothing vp = -Z ./ r end
 

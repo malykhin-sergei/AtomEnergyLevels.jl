@@ -7,7 +7,10 @@ function test01()
   @info "Hamiltonian is:  H = -1/2μ⋅Δ + 1/2⋅k⋅r²"
   @info "Eigenvalues are: E = ħω⋅(2nᵣ + l + 3/2),"
   @info "where nᵣ = 0, 1, 2...; l = 0, 1, 2..., and ω² = k/μ"
-  r, n, dx = radial_grid()
+  r, n, dx = begin
+      x = range(-30, 20, length = 501)
+      exp.(x), x.len, x.step.hi
+  end
   conf = ((0,0,0,), (0,0,0), (0,0,0))
   ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals
   @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
@@ -19,7 +22,7 @@ function test01()
     for (j, nᵢ) in enumerate(subshell)
       nᵣ = j - 1
       ϵ_exact[k] = 2nᵣ + l + 3/2
-      @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e", 
+      @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
       nᵣ, atomic_shell[i], ψ[3,k], ϵ_exact[k], ϵ_exact[k] - ψ[3,k])
       k += 1
     end
@@ -35,10 +38,13 @@ function test02()
   @info "An exact solution for Hooke's atom is E = 2.0 a.u."
   @info "For Slater Xα method α is adjustable parameter."
   @info "Here we reproduce exact Hooke atom energy with"
-  @info "α = 0.83685294"  
-  r, n, dx = radial_grid(301)
+  @info "α = 0.83685294"
+  r, n, dx = begin
+      x = range(-30, 20, length = 301)
+      exp.(x), x.len, x.step.hi
+  end
   E = lda((r, n, dx), conf = 2, xc = x -> Xα(x; α = 0.83685294), vp = 1/8 * r.^2, β = 0.8).energy
-  return E-2.0           
+  return E-2.0
 end
 
 function test03()
