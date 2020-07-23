@@ -6,7 +6,7 @@ import Printf: @sprintf
 export laplacian, radial_shr_eq, TF, lda
 
 include("dft_xc_functionals.jl")
-export Xα, SVWN
+export Slater, VWN
 
 include("periodic_table.jl")
 export atomic_shell, atomic_electron_configuration
@@ -437,7 +437,7 @@ function lda((r, n, dx) = begin
                     exp.(x), x.len, x.step.hi end;
                 Z = nothing,
              conf = nothing,
-               xc = SVWN,
+               xc = ρ -> Slater(ρ) .+ VWN(ρ),
                vp = nothing,
              ρ_in = nothing,
                 β = 0.3,

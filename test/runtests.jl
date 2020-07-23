@@ -43,7 +43,7 @@ function test02()
       x = range(-30, 20, length = 301)
       exp.(x), x.len, x.step.hi
   end
-  E = lda((r, n, dx), conf = 2, xc = x -> Xα(x; α = 0.83685294), vp = 1/8 * r.^2, β = 0.8).energy
+  E = lda((r, n, dx), conf = 2, xc = x -> Slater(x; α = 0.83685294), vp = 1/8 * r.^2, β = 0.8).energy
   return E-2.0
 end
 
