@@ -6,7 +6,7 @@ import Printf: @sprintf
 export laplacian, radial_shr_eq, TF, lda
 
 include("dft_xc_functionals.jl")
-export Slater, VWN
+export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
 
 include("periodic_table.jl")
 export atomic_shell, atomic_electron_configuration
@@ -245,7 +245,7 @@ function lda((r, n, dx) = begin
                     exp.(x), x.len, x.step.hi end;
                 Z = nothing,
              conf = nothing,
-               xc = SVWN,
+               xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ),
                vp = nothing,
              ρ_in = nothing,
                 β = 0.3,
@@ -266,7 +266,7 @@ On input:
 * `conf`   - electronic configuration
    (optional, but `Z` and/or `conf` must be provided anyway)
 * `xc`     - LDA exchange-correlation functional
-   (default is S.H. Vosko, L. Wilk, and M. Nusair functional, SVWN(ρ))
+   (default is Slater exchange + VWN correlation)
 *  `vp`    - external potential
    (default is Coulomb potential `vp = -Z/r`)
 *  `ρ_in`  - input density
@@ -394,7 +394,7 @@ julia> r, n, dx = begin
     exp.(x), x.len, x.step.hi
 end;
 
-julia> lda(conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
+julia> lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
 [ Info: Neutral atom with Z =  2 is assumed.
 [ Info: Using logarithmic 501 point grid and step dx = 0.1000
 [ Info: Using Thomas-Fermi starting electron density
@@ -437,7 +437,7 @@ function lda((r, n, dx) = begin
                     exp.(x), x.len, x.step.hi end;
                 Z = nothing,
              conf = nothing,
-               xc = ρ -> Slater(ρ) .+ VWN(ρ),
+               xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ),
                vp = nothing,
              ρ_in = nothing,
                 β = 0.3,
