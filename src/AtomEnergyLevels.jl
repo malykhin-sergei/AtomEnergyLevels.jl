@@ -37,7 +37,7 @@ julia> mH = 1.00794; mO = 15.9994; μ = 1822.8885*(mH*mO)/(mH+mO);
 
 julia> xmin = 2.0 - x₀; xmax = 12.0 + x₀;
 
-julia> x = range(xmin, xmax, length = n); dx = x.step.hi;
+julia> x = range(xmin, xmax, length = n); dx = step(x);
 
 julia> V(x) = D*(exp(-β*(x-x₀))-1)^2 - D;  # Morse potential
 
@@ -120,7 +120,7 @@ The numerical solution is following.
 ```julia-repl
 julia> r, n, dx = begin
            x = range(-30, 20, length = 501)
-           exp.(x), x.len, x.step.hi
+           exp.(x), length(x), step(x)
        end;
 
 julia> conf = ((1,0,0,), (0,0,0), (0,0,0));
@@ -149,7 +149,7 @@ E = -1/2(nᵣ + l + 1)², R1s(r) = 2*exp(-r)
 ```julia-repl
 julia> r, n, dx = begin
            x = range(-30, 20, length = 501)
-           exp.(x), x.len, x.step.hi
+           exp.(x), length(x), step(x)
        end;
 
 julia> result = radial_shr_eq((r, n, dx), -1 ./ r, 1);
@@ -224,7 +224,7 @@ Zeitschrift für Naturforschung A, 2(3), 133-145.
 ```julia-repl
 julia> r, n, dx = begin
            x = range(-30, 20, length = 501)
-           exp.(x), x.len, x.step.hi
+           exp.(x), length(x), step(x)
        end;
 
 julia> 4π * dx * sum(TF.(r, 86) .* r .^3)
@@ -242,7 +242,7 @@ end
 ```julia
 function lda((r, n, dx) = begin
                 x = range(-30, 20, length = 501);
-                    exp.(x), x.len, x.step.hi end;
+                    exp.(x), length(x), step(x) end;
                 Z = nothing,
              conf = nothing,
                xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ),
@@ -391,7 +391,7 @@ An exact solution for Hooke's atom is E = 2.0 a.u.
 ```julia-repl
 julia> r, n, dx = begin
     x = range(-30, 20, length = 501)
-    exp.(x), x.len, x.step.hi
+    exp.(x), length(x), step(x)
 end;
 
 julia> lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8).energy;
@@ -434,7 +434,7 @@ JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
 """
 function lda((r, n, dx) = begin
                 x = range(-30, 20, length = 501);
-                    exp.(x), x.len, x.step.hi end;
+                    exp.(x), length(x), step(x) end;
                 Z = nothing,
              conf = nothing,
                xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ),
