@@ -130,8 +130,3 @@ function conf_decode(conf)
     s -> replace(s, "1s2.0"                         => "[He]") |>
     strip
 end
-
-# FIXME
-# julia> conf_decode(conf_enc("[Xe] 4f1 5d1 6s2"))
-# "[Kr] 4d10.0 4f1.0 5s2.0 5p6.0 5d1.0 6s2.0"
-# TODO jump f-shell +2

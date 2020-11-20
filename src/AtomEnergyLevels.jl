@@ -8,6 +8,9 @@ export laplacian, radial_shr_eq, TF, lda
 include("dft_xc_functionals.jl")
 export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
 
+include("conf_parse.jl")
+export conf_enc
+
 include("periodic_table.jl")
 export atomic_shell, atomic_electron_configuration
 
