@@ -1,9 +1,3 @@
-#= 
-TODO: Documenter.jl
-TODO: GGA
-TODO: LSDA
-TODO: SR =#
-  
 """
     conf_enc(input::AbstractString; maxn = 7, spins = 2,
     notation = Dict("s" => 0, "p" => 1, "d" => 2, "f" => 3))
@@ -141,4 +135,3 @@ end
 # julia> conf_decode(conf_enc("[Xe] 4f1 5d1 6s2"))
 # "[Kr] 4d10.0 4f1.0 5s2.0 5p6.0 5d1.0 6s2.0"
 # TODO jump f-shell +2
-
