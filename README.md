@@ -28,7 +28,7 @@ mH = 1.00794; mO = 15.9994; μ = 1822.8885*(mH*mO)/(mH+mO);
 # grid
 x = range(2.0 - x₀, 12.0 + x₀, length = 501);
 
-Δ = laplacian(x.len, x.step.hi);  
+Δ = laplacian(length(x), step(x));  
 
 # Hamiltonian
 H = -1/2μ*Δ + Diagonal(V.(x, D, β, x₀));
@@ -60,7 +60,7 @@ where the tuples `(0,0,0)` indicate population numbers of each shell.
 ```julia
 r, n, dx = begin
   x = range(-30, 20, length = 501)
-  exp.(x), x.len, x.step.hi
+  exp.(x), length(x), step(x)
 end;
 ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals;
 ψ[1:3,:]
@@ -81,7 +81,7 @@ using AtomEnergyLevels
 
 r, n, dx = begin
     x = range(-30, 20, length = 501)
-    exp.(x), x.len, x.step.hi
+    exp.(x), length(x), step(x)
 end;
 
 result = lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8);
