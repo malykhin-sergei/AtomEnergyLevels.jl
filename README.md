@@ -2,7 +2,7 @@
 
 | **`Linux`** | **`Mac OS X`** | **`Windows`** |
 |-----------------|---------------------|-------------------------|
-| [![Build Status](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/malykhin-sergei/AtomEnergyLevels.jl) | [![Build Status](https://travis-ci.org/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/malykhin-sergei/AtomEnergyLevels.jl)| [![Build Status](https://travis-ci.org/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/malykhin-sergei/AtomEnergyLevels.jl)|
+|[![Build Status](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl)|[![Build Status](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl)|[![Build Status](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl)|
 
 Solve numerically
 
