@@ -1,9 +1,5 @@
 # AtomEnergyLevels
 
-| **`Linux`** | **`Mac OS X`** | **`Windows`** |
-|-----------------|---------------------|-------------------------|
-| [![Build Status](https://travis-ci.org/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/AtomEnergyLevels.jl) | [![Build Status](https://travis-ci.org/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/AtomEnergyLevels.jl)| [![Build Status](https://travis-ci.org/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.org/AtomEnergyLevels.jl)|
-
 Solve numerically
 
  1. 1D [Schrödinger equation](https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation) by the [spectral collocation (i.e., pseudospectral) method](https://en.wikipedia.org/wiki/Collocation_method)
