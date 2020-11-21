@@ -4,6 +4,7 @@ authors = ["Sergei Malykhin <s.e.malykhin@gmail.com>"]
 version = "0.1.2"
 
 [deps]
+Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
