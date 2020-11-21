@@ -451,14 +451,14 @@ function lda((r, n, dx) = begin
                 α = 1e5)
 
   # Check input parameters
-  if Z == nothing && conf == nothing
+  if isnothing(Z) && isnothing(conf)
     @error "System is not specified: provide ether atomic number Z or/and electron configuration."
     return (energy = nothing, density = nothing, orbitals = nothing)
-  elseif Z == nothing
+  elseif isnothing(Z)
     Q = sum(Iterators.flatten(conf))
     Z = Q
     @info @sprintf("Neutral atom with Z = %2i is assumed.", Z)
-  elseif conf == nothing
+  elseif isnothing(conf)
     conf = atomic_electron_configuration[Z]
     Q = Z
     s = keys(atomic_electron_configuration)[Z]
@@ -470,9 +470,9 @@ function lda((r, n, dx) = begin
   r² = r .* r; r³ = r² .* r; sqr = sqrt.(r)
   @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
-  if vp == nothing vp = -Z ./ r end
+  if isnothing(vp) vp = -Z ./ r end
 
-  if ρ_in == nothing
+  if isnothing(ρ_in)
     ρ_in = TF.(r, Q)
     @info "Using Thomas-Fermi starting electron density"
   end

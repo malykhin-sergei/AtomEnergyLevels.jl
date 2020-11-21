@@ -47,3 +47,6 @@ function test_all(N = length(ENIST))
     @info @sprintf("%2s: ΔE = %+e", element, ENIST[Z]-E[Z])
   end  
 end
+# Pkg.test("AtomEnergyLevels", julia_args = ["test/all-elements-test.jl"])
+# Pkg.test("AtomEnergyLevels")
+test_all(2)

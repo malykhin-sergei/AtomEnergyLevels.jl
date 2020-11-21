@@ -109,14 +109,14 @@ function conf_enc(input::AbstractString;
     end        
     return tuple(configuration...)
 end
-
+#=
 function conf_decode(conf)
     ls = ('s', 'p', 'd', 'f')
     s = []
     for l in 1:length(conf), n in 1:length(conf[l])
             push!(s, tuple(n + l - 1, l, conf[l][n]))
     end
-    sort!(s, by=x -> x[1])
+    sort!(s, by = x -> x[1])
     return mapreduce(x -> "$(x[1])$(ls[x[2]])$(x[3]) ", *, s, init="") |> 
     s -> replace(s, "1s2.0 2s2.0 2p6.0 3s2.0 3p6.0 3d10.0 "  * 
                     "4s2.0 4p6.0 4d10.0 4f14.0 5s2.0 5p6.0 " * 
@@ -130,3 +130,4 @@ function conf_decode(conf)
     s -> replace(s, "1s2.0"                         => "[He]") |>
     strip
 end
+=#
