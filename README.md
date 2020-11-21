@@ -19,7 +19,7 @@ for which the potential energy surface is approximated through the Morse potenti
 The bulk of the calculations were performed by the Laplacian function.
 
 ```julia
-using LinearAlgebra, AtomEnergyLevels  
+using LinearAlgebra, AtomEnergyLevels
 
 # Morse potential
 V(x, D, β, x₀) = D*(exp(-β*(x-x₀))-1)^2 - D;  
@@ -51,29 +51,43 @@ E(0) # -0.19047201661032412
 Using the following code, one can find the energy levels for a
 [spherically-symmetric three-dimensional harmonic oscillator.](https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator)
 
-To find the energy levels with quantum numbers nᵣ = 1, 2, 3 and l = 0, 1, 2,
-the levels of interest should be included in the tuple of the
-electronic configuration as follows
+To find the energy levels with quantum numbers nᵣ = 0, 1, 2 and l = 0, 1, 2,
+the levels of interest should be included in the electronic configuration
 ```julia
-#          l=0        l=1        l=2
-conf = ((0, 0, 0), (0, 0, 0), (0, 0, 0));
-#   nᵣ = 0, 1, 2;   0, 1, 2;   0, 1, 2;  
-```
-where the tuples `(0,0,0)` indicate population numbers of each shell.
-```julia
+using AtomEnergyLevels, Printf
+
+# electronic configuration
+cfg = "1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1";
+
+# radial grid
 r, n, dx = begin
   x = range(-30, 20, length = 501)
   exp.(x), length(x), step(x)
 end;
-ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals;
-ψ[1:3,:]
+
+# solution of the Schrödinger equation
+ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf_enc(cfg)).orbitals;
+
+# sort levels by energy
+p = sortperm(ψ[3,:]); ψ = ψ[:, p];
+
+for (i, ϵᵢ) in enumerate(ψ[3,:])
+  l, nᵣ, nᵢ = ψ[1, i], ψ[2, i], ψ[4, i]
+  n = nᵣ + l + 1
+  @printf("%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l+1], nᵢ, ϵᵢ)
+end
 ```
-The output should be a matrix
+The output will be
 ```julia
-3×9 Array{Float64,2}:
- 0.0  0.0  0.0  1.0  1.0  1.0  2.0  2.0  2.0  # azimuthal quantum numbers, l
- 0.0  1.0  2.0  0.0  1.0  2.0  0.0  1.0  2.0  # radial quantum numbers, nᵣ
- 1.5  3.5  5.5  2.5  4.5  6.5  3.5  5.5  7.5  # energy levels
+1S      ( 1.0)        1.500000
+2P      ( 1.0)        2.500000
+3D      ( 1.0)        3.500000
+2S      ( 1.0)        3.500000
+3P      ( 1.0)        4.500000
+4D      ( 1.0)        5.500000
+3S      ( 1.0)        5.500000
+4P      ( 1.0)        6.500000
+5D      ( 1.0)        7.500000
 ```
 ### Hooke's atom
 
@@ -92,11 +106,18 @@ result = lda((r, n, dx), conf = 2, vp = 1/8 * r.^2, β = 0.8);
 using SpecialFunctions, PyPlot
 pygui(true);
 
+# exact density of the ground state, see
+# S. Kais et al // Density functionals and dimensional 
+# renormalization for an exactly solvable model, JCP 99, 417 (1993); 
+# http://dx.doi.org/10.1063/1.465765
+
 N² = 1 / (π^(3/2) * (8 + 5 * sqrt(π)));
 ρₑ = @. 2N² * exp(-1/2 * r^2) * (sqrt(π/2) * (7/4 + 1/4 * r^2
                    + (r + 1/r) * erf(r/sqrt(2))) + exp(-1/2 * r^2));
 
-plot(r, ρₑ, label = "exact"); plot(r, result.density, label = "LDA");
+intv = 1:317; # r = 0 .. 5
+plot(r[intv], ρₑ[intv], label = "exact"); 
+plot(r[intv], result.density[intv], label = "LDA");
 ```
 
 ![Comparison of the exact Hooke's atom density with LDA numerical result](./hooke_atom_density.png)
