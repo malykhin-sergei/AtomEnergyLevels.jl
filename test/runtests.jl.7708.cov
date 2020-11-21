@@ -1,0 +1,68 @@
+        - using AtomEnergyLevels
+        - using Test, Printf
+        - 
+        - function test01()
+        2   @info "3D isotropic harmonic oscillator"
+        2   @info "https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator"
+        2   @info "Hamiltonian is:  H = -1/2μ⋅Δ + 1/2⋅k⋅r²"
+        2   @info "Eigenvalues are: E = ħω⋅(2nᵣ + l + 3/2),"
+        2   @info "where nᵣ = 0, 1, 2...; l = 0, 1, 2..., and ω² = k/μ"
+        0   r, n, dx = begin
+        1       x = range(-30, 20, length = 501)
+        2       exp.(x), x.len, x.step.hi
+        -   end
+        1   conf = ((0,0,0,), (0,0,0), (0,0,0))
+        2   ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals
+        2   @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
+        1   nlevels = length(collect(Iterators.flatten(conf)))
+        9   ϵ_exact = zeros(nlevels)
+        1   k = 1
+        1   for (i, subshell) in enumerate(conf)
+        3     l = i - 1
+        6     for (j, nᵢ) in enumerate(subshell)
+        9       nᵣ = j - 1
+        9       ϵ_exact[k] = 2nᵣ + l + 3/2
+       18       @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
+        -       nᵣ, atomic_shell[i], ψ[3,k], ϵ_exact[k], ϵ_exact[k] - ψ[3,k])
+       11       k += 1
+        -     end
+        -   end
+        1   abs_error = maximum(abs.(ϵ_exact .- ψ[3,:]))
+        2   @info @sprintf("Maximum absolute error is: max|Δϵ| = %0.6e", abs_error)
+        1   return abs_error
+        - end
+        - 
+        - function test02()
+        2   @info "Hooke's atom"
+        2   @info "https://en.wikipedia.org/wiki/Hooke's_atom"
+        2   @info "An exact solution for Hooke's atom is E = 2.0 a.u."
+        2   @info "For Slater Xα method α is adjustable parameter."
+        2   @info "Here we reproduce exact Hooke atom energy with"
+        2   @info "α = 0.83685294"
+        0   r, n, dx = begin
+        1       x = range(-30, 20, length = 301)
+        2       exp.(x), x.len, x.step.hi
+        -   end
+     3313   E = lda((r, n, dx), conf = 2, xc = x -> LDA_X(x; α = 0.83685294), vp = 1/8 * r.^2, β = 0.8).energy
+        1   return E-2.0
+        - end
+        - 
+        - function test03()
+        2   @info "Argon atom"
+        2   @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
+        2   @info "Etot = -525.946195 (NIST)"
+        1   E, ρ, ψ = lda(conf = atomic_electron_configuration[:Ar], β=0.6)
+        2   @info "Energy levels for the Ar atom are:"
+        1   for (i, ϵᵢ) in enumerate(ψ[3,:])
+        5     l = ψ[1, i]
+        5     n = l + ψ[2, i] + 1
+       10     @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l+1], ψ[4, i], ϵᵢ)
+        -   end
+        1   return -525.946195-E
+        - end
+        - 
+        - @testset "AtomEnergyLevels.jl" begin
+        -   @test test01() ≈ 0.0 atol = 1e-10
+        -   @test test02() ≈ 0.0 atol = 5e-7
+        -   @test test03() ≈ 0.0 atol = 5e-7
+        - end
