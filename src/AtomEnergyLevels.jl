@@ -565,6 +565,8 @@ function lda((r, n, dx) = begin
       ELECTRON-NUCLEAR       %16.6f
       TOTAL ENERGY           %16.6f
       VIRIAL RATIO           %16.6f\n", Ek, Eh, Exc, Ep, E, VR)
-  return (energy = E, density = ρ, orbitals = ψ)
+  return (energy = 
+          (total = E, kinetic = Ek, hartree = Eh, xc = Exc, potential = Ep), 
+          grid = (r, n, dx), density = ρ, orbitals = ψ)
 end
 end # module
