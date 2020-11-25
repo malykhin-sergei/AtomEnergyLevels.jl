@@ -2,26 +2,19 @@ using AtomEnergyLevels
 using Test, Printf
 
 @testset "AtomEnergyLevels.jl" begin
-  @info "All tests use the same radial grid rᵢ = exp(xᵢ)"
-  @info "where xᵢ = x₀ + (i - 1)*dx, i = 1 ... 501."
-  r, n, dx = begin
-    x = range(-30, 20, length = 501)
-    exp.(x), length(x), step(x)
-  end
-
   @testset "3D isotropic harmonic oscillator" begin
     @info "3D isotropic harmonic oscillator"
     @info "https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator"
     @info "Hamiltonian is:  H = -1/2μ⋅Δ + 1/2⋅k⋅r²"
     @info "Eigenvalues are: E = ħω⋅(2nᵣ + l + 3/2),"
     @info "where nᵣ = 0, 1, 2...; l = 0, 1, 2..., and ω² = k/μ"
-    conf = ((0,0,0,), (0,0,0), (0,0,0))
-    ψ = radial_shr_eq((r, n, dx), 1/2*r.^2, conf).orbitals
+    config = ((0,0,0,), (0,0,0), (0,0,0))
+    ψ = radial_shr_eq(r -> 1/2*r^2, conf = config).orbitals
     @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
-    nlevels = length(collect(Iterators.flatten(conf)))
+    nlevels = length(collect(Iterators.flatten(config)))
     ϵ_exact = zeros(nlevels)
     k = 1
-    for (i, subshell) in enumerate(conf)
+    for (i, subshell) in enumerate(config)
       l = i - 1
       for (j, nᵢ) in enumerate(subshell)
         nᵣ = j - 1
@@ -42,8 +35,8 @@ using Test, Printf
     @info "An exact solution for Hooke's atom is E = 2.0 a.u."
     @info "For the Xα method α is adjustable parameter."
     @info "Here we reproduce exact Hooke atom energy with α = 0.83685294"
-    Etot = lda((r, n, dx), conf = 2, xc = x -> LDA_X(x; α = 0.83685294), 
-                vp = 1/8 * r.^2, β = 0.8).energy.total
+    Etot = lda(2, conf = 2, xc = x -> LDA_X(x; α = 0.83685294), 
+                Vex = r -> 1/8 * r^2, β = 0.8).energy.total
     @test Etot ≈ 2.0 atol = 1e-7
   end
 
@@ -51,7 +44,7 @@ using Test, Printf
     @info "Argon atom"
     @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
     @info "Etot = -525.946195 (NIST)"
-    E, grid, ρ, ψ = lda(Z = 18, β=0.6)
+    E, ρ, ψ = lda(18, β=0.6)
     @info "Energy levels for the Ar atom are:"
     p = sortperm(ψ[3,:])
     ψ = ψ[:, p]
@@ -76,7 +69,7 @@ using Test, Printf
     @info "Ar+ [Ne] 3s2 3p5"
     @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
     @info "Etot = -525.351708  (NIST)"
-    E, grid, ρ, ψ = lda(Z = 18, conf = conf_enc("[Ne] 3s2 3p5"), β=0.6)
+    E, ρ, ψ = lda(18, conf = conf_enc("[Ne] 3s2 3p5"), β=0.6)
     @info "Energy levels for Ar+ are:"
     p = sortperm(ψ[3,:])
     ψ = ψ[:, p]
