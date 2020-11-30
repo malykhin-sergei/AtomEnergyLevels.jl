@@ -124,7 +124,32 @@ N² = 1 / (π^(3/2) * (8 + 5 * sqrt(π)));
 plot(r, ρₑ, label = "exact"); 
 plot(r, result.density ./ r, label = "LDA");
 ```
-
+Output:
+```
+[ Info: Using logarithmic 321 point grid with step dx = 0.1000
+[ Info: Using Thomas-Fermi starting electron density
+┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000
+└       and convergence threshold |Δρ| ≤ 1.000000e-06
+[ Info: cycle           energy          |Δρ|
+[ Info:   0           2.108255      1.786059
+[ Info:   1           2.014267      0.335879
+[ Info:   2           2.022630      0.069517
+[ Info:   3           2.025812      0.013903
+[ Info:   4           2.026465      0.002825
+[ Info:   5           2.026584      0.000586
+[ Info:   6           2.026606      0.000123
+[ Info:   7           2.026611      0.000026
+[ Info:   8           2.026611      0.000006
+[ Info:   9           2.026612      0.000001
+[ Info:  10           2.026612      0.000000
+┌ Info: RESULTS SUMMARY:
+│       ELECTRON KINETIC               0.627459
+│       ELECTRON-ELECTRON              1.022961
+│       EXCHANGE-CORRELATION          -0.523773
+│       ELECTRON-NUCLEAR               0.899965
+│       TOTAL ENERGY                   2.026612
+└       VIRIAL RATIO                  -2.229869
+```
 ![Comparison of the exact Hooke's atom density with LDA numerical result](./hooke_atom_density.png)
 
 ### Uranium atom
