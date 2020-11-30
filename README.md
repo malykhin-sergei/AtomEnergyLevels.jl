@@ -71,13 +71,14 @@ using AtomEnergyLevels, Printf
 
 function isotropic_harmonic_oscillator(cfg)
   ψ = radial_shr_eq(r -> 1/2*r^2, conf = conf_enc(cfg)).orbitals;
-  @printf("nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
+  @printf("\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
   for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
     nᵣ, l = quantum_numbers
     ϵ_calc = orbital.ϵᵢ
+    n = nᵣ + l + 1
     ϵ_exact = 2nᵣ + l + 3/2
-    @printf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e\n",
-            nᵣ, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+    @printf("%i%s\t%10.8f\t%10.8f\t%+0.6e\n",
+            n, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
   end
 end
 
@@ -85,16 +86,16 @@ isotropic_harmonic_oscillator("1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1");
 ```
 The output will be
 ```
-nᵣ      l       ϵ(calc.)        ϵ(exact)        Δϵ
-0       S       1.50000000      1.50000000      -2.639289e-11
-0       P       2.50000000      2.50000000      +3.940093e-11
-0       D       3.50000000      3.50000000      +2.014788e-11
-1       S       3.50000000      3.50000000      -2.537082e-12
-1       P       4.50000000      4.50000000      +3.407141e-11
-1       D       5.50000000      5.50000000      +3.625988e-11
-2       S       5.50000000      5.50000000      +4.071410e-12
-2       P       6.50000000      6.50000000      +2.108536e-12
-2       D       7.50000000      7.50000000      +4.278622e-11
+        ϵ(calc.)        ϵ(exact)        Δϵ
+1S      1.50000000      1.50000000      -2.639289e-11
+2P      2.50000000      2.50000000      +3.940093e-11
+3D      3.50000000      3.50000000      +2.014788e-11
+2S      3.50000000      3.50000000      -2.537082e-12
+3P      4.50000000      4.50000000      +3.407141e-11
+4D      5.50000000      5.50000000      +3.625988e-11
+3S      5.50000000      5.50000000      +4.071410e-12
+4P      6.50000000      6.50000000      +2.108536e-12
+5D      7.50000000      7.50000000      +4.278622e-11
 ```
 ### Hooke's atom
 
@@ -140,7 +141,7 @@ function uranium()
     nᵣ, l = quantum_numbers
     nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
     n = nᵣ + l + 1
-    @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], nᵢ, ϵᵢ)
+    @printf("\t%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l], nᵢ, ϵᵢ)
   end
 end
 
@@ -186,25 +187,25 @@ Output:
 │       ELECTRON-NUCLEAR          -60876.210618
 │       TOTAL ENERGY              -25658.417889
 └       VIRIAL RATIO                   2.000280
-[ Info:         1S      ( 2.0)    -3689.355140
-[ Info:         2S      ( 2.0)     -639.778728
-[ Info:         2P      ( 6.0)     -619.108550
-[ Info:         3S      ( 2.0)     -161.118073
-[ Info:         3P      ( 6.0)     -150.978980
-[ Info:         3D      (10.0)     -131.977358
-[ Info:         4S      ( 2.0)      -40.528084
-[ Info:         4P      ( 6.0)      -35.853321
-[ Info:         4D      (10.0)      -27.123212
-[ Info:         4F      (14.0)      -15.027460
-[ Info:         5S      ( 2.0)       -8.824089
-[ Info:         5P      ( 6.0)       -7.018092
-[ Info:         5D      (10.0)       -3.866175
-[ Info:         6S      ( 2.0)       -1.325976
-[ Info:         6P      ( 6.0)       -0.822538
-[ Info:         5F      ( 3.0)       -0.366543
-[ Info:         6D      ( 1.0)       -0.143190
-[ Info:         7S      ( 2.0)       -0.130948
-  3.949976 seconds (77.60 k allocations: 1.193 GiB, 0.86% gc time)
+        1S      ( 2.0)    -3689.355140
+        2S      ( 2.0)     -639.778728
+        2P      ( 6.0)     -619.108550
+        3S      ( 2.0)     -161.118073
+        3P      ( 6.0)     -150.978980
+        3D      (10.0)     -131.977358
+        4S      ( 2.0)      -40.528084
+        4P      ( 6.0)      -35.853321
+        4D      (10.0)      -27.123212
+        4F      (14.0)      -15.027460
+        5S      ( 2.0)       -8.824089
+        5P      ( 6.0)       -7.018092
+        5D      (10.0)       -3.866175
+        6S      ( 2.0)       -1.325976
+        6P      ( 6.0)       -0.822538
+        5F      ( 3.0)       -0.366543
+        6D      ( 1.0)       -0.143190
+        7S      ( 2.0)       -0.130948
+  4.133966 seconds (128.07 k allocations: 1.195 GiB, 1.10% gc time)
 ```
 
 ## Author
