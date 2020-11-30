@@ -1,5 +1,2 @@
-.DS_Store
 /Manifest.toml
-/dev/
-.vscode/settings.json
-src/configurations
+docs/build/
