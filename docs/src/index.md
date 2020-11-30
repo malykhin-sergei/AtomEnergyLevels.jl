@@ -230,6 +230,6 @@ S = β*H + α * Diagonal(r .* r);
 θ, y = eigen(H, S);
 ϵ = α * θ ./ (1.0 .- θ);
 
-# see energy of the 1s state of hydrogen atom
+# see energy of the 1s-state of hydrogen atom
 ϵ[1]
 ```
