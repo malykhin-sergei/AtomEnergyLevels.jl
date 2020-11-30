@@ -11,22 +11,14 @@ using Test, Printf
     config = ((0,0,0,), (0,0,0), (0,0,0))
     ψ = radial_shr_eq(r -> 1/2*r^2, conf = config).orbitals
     @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
-    nlevels = length(collect(Iterators.flatten(config)))
-    ϵ_exact = zeros(nlevels)
-    k = 1
-    for (i, subshell) in enumerate(config)
-      l = i - 1
-      for (j, nᵢ) in enumerate(subshell)
-        nᵣ = j - 1
-        ϵ_exact[k] = 2nᵣ + l + 3/2
-        @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
-        nᵣ, atomic_shell[i], ψ[3,k], ϵ_exact[k], ϵ_exact[k] - ψ[3,k])
-        k += 1
-      end
+    for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+      nᵣ, l = quantum_numbers
+      ϵ_calc = orbital.ϵᵢ
+      ϵ_exact = 2nᵣ + l + 3/2      
+      @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
+      nᵣ, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+      @test ϵ_calc ≈ ϵ_exact atol = 1e-10
     end
-    abs_error = maximum(abs.(ϵ_exact .- ψ[3,:]))
-    @info @sprintf("Maximum absolute error is: max|Δϵ| = %0.6e", abs_error)
-    @test abs_error ≈ 0.0 atol = 1e-10
   end
 
   @testset "Hooke's atom energy" begin
@@ -46,23 +38,23 @@ using Test, Printf
     @info "Etot = -525.946195 (NIST)"
     E, ρ, ψ = lda(18, β=0.6)
     @info "Energy levels for the Ar atom are:"
-    p = sortperm(ψ[3,:])
-    ψ = ψ[:, p]
-    for (i, ϵᵢ) in enumerate(ψ[3,:])
-      l, nᵣ, nᵢ = ψ[1, i], ψ[2, i], ψ[4, i]
+    for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+      nᵣ, l = quantum_numbers
+      nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l+1], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.946195 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.969812 atol = 1e-6 # Ekin
     @test E.hartree   ≈   231.458124 atol = 1e-6 # Ecoul
     @test E.potential ≈ -1253.131982 atol = 1e-6 # Eenuc 
     @test E.xc        ≈   -29.242149 atol = 1e-6 # Exc
-    @test ψ[3, 1]     ≈  -113.800134 atol = 1e-6 # 1s
-    @test ψ[3, 2]     ≈   -10.794172 atol = 1e-6 # 2s
-    @test ψ[3, 3]     ≈    -8.443439 atol = 1e-6 # 2p
-    @test ψ[3, 4]     ≈    -0.883384 atol = 1e-6 # 3s
-    @test ψ[3, 5]     ≈    -0.382330 atol = 1e-6 # 3p
+
+    @test ψ[(nᵣ=0, l=0)].ϵᵢ ≈  -113.800134 atol = 1e-6 # 1s
+    @test ψ[(nᵣ=1, l=0)].ϵᵢ ≈   -10.794172 atol = 1e-6 # 2s
+    @test ψ[(nᵣ=0, l=1)].ϵᵢ ≈    -8.443439 atol = 1e-6 # 2p
+    @test ψ[(nᵣ=2, l=0)].ϵᵢ ≈    -0.883384 atol = 1e-6 # 3s
+    @test ψ[(nᵣ=1, l=1)].ϵᵢ ≈    -0.382330 atol = 1e-6 # 3p
   end
   
   @testset "Ar+" begin
@@ -71,22 +63,22 @@ using Test, Printf
     @info "Etot = -525.351708  (NIST)"
     E, ρ, ψ = lda(18, conf = conf_enc("[Ne] 3s2 3p5"), β=0.6)
     @info "Energy levels for Ar+ are:"
-    p = sortperm(ψ[3,:])
-    ψ = ψ[:, p]
-    for (i, ϵᵢ) in enumerate(ψ[3,:])
-      l, nᵣ, nᵢ = ψ[1, i], ψ[2, i], ψ[4, i]
+    for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+      nᵣ, l = quantum_numbers
+      nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l+1], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.351708 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.405209 atol = 1e-6 # Ekin
     @test E.hartree   ≈   222.915201 atol = 1e-6 # Ecoul
     @test E.potential ≈ -1243.839462 atol = 1e-6 # Eenuc 
     @test E.xc        ≈   -28.832655 atol = 1e-6 # Exc
-    @test ψ[3, 1]     ≈  -114.320786 atol = 1e-6 # 1s
-    @test ψ[3, 2]     ≈   -11.303467 atol = 1e-6 # 2s
-    @test ψ[3, 3]     ≈    -8.954227 atol = 1e-6 # 2p
-    @test ψ[3, 4]     ≈    -1.337427 atol = 1e-6 # 3s
-    @test ψ[3, 5]     ≈    -0.816635 atol = 1e-6 # 3p
+    
+    @test ψ[(nᵣ=0, l=0)].ϵᵢ ≈  -114.320786 atol = 1e-6 # 1s
+    @test ψ[(nᵣ=1, l=0)].ϵᵢ ≈   -11.303467 atol = 1e-6 # 2s
+    @test ψ[(nᵣ=0, l=1)].ϵᵢ ≈    -8.954227 atol = 1e-6 # 2p
+    @test ψ[(nᵣ=2, l=0)].ϵᵢ ≈    -1.337427 atol = 1e-6 # 3s
+    @test ψ[(nᵣ=1, l=1)].ϵᵢ ≈    -0.816635 atol = 1e-6 # 3p
   end
 end

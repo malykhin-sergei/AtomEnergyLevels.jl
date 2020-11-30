@@ -1,5 +1,6 @@
 # Sober Physicists Don't Find Giraffes Hiding In Kitchens
-atomic_shell = ('S', 'P', 'D', 'F', 'G', 'H', 'I', 'K');
+atomic_shell = Dict(0 => 'S', 1 => 'P', 2 => 'D', 3 => 'F',
+                    4 => 'G', 5 => 'H', 6 => 'I', 7 => 'K')
 
 # Electronic configurations of the elements, taken from
 # https://math.nist.gov/DFTdata/atomdata/configuration.html

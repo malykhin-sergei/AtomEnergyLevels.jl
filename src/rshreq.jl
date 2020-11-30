@@ -41,42 +41,25 @@ radial_shr_eq(V::Array{S}, x::AbstractRange{T};
               _radial_shr_eq(x, V, conf, μ, α)
 
 function _radial_shr_eq(x, V, conf, μ, α)
+  if length(V) != length(x)
+    throw(DomainError(x, "Arrays V and r have different length"))
+  end
   
-  r, n, dx = exp.(x), length(x), step(x)
+  r, r², n, dx = exp.(x), exp.(2x), length(x), step(x)
   
-  length(V) != n && throw(DomainError(x, "Arrays V and r have different length"))
-
-  r² = r .* r
   H = -1/2μ*laplacian(n, dx) + Diagonal(V .* r²)
 
-  ρ = zeros(n)
-  ψ = zeros(n + 4, length(collect(Iterators.flatten(conf))))
-
-  k = 1; E = 0.0
-
+  E = 0.0; ρ = zeros(n); ψ = Dict()
+  
   for (l, subshell) in enumerate(conf)
-
     Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
     θ, y = eigen!(Hl, Hl + Diagonal(α * r²))
     ε = α*θ ./ (1 .- θ)
-
-    for (i, occ) in enumerate(subshell)
-      # normalize wavefunctions
-      y[:, i] *= 1.0 / sqrt(∫(dx, y[:, i] .^ 2 .* r²))
-
-      # make density from occupied orbitals
-      ρ .+= occ / 4π * y[:, i] .^ 2 # ./ r
-
-      # calculate total energy
-      E += occ * ε[i]
-
-      # save results
-      ψ[1, k] = l-1                       # azimuthal quantum number
-      ψ[2, k] = i-1                       # radial quantum number
-      ψ[3, k] = ε[i]                      # level energy
-      ψ[4, k] = occ                       # level occupation
-      ψ[5:end, k] = y[:, i] # ./ sqrt.(r)   # orbital
-      k += 1
+    for (nᵣ, occ) in enumerate(subshell)
+      y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+      ρ .+= occ / 4π * y[:, nᵣ] .^ 2
+      E += occ * ε[nᵣ]
+      ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = occ, ψᵢ = y[:, nᵣ])
     end
   end
   return (energy = E, density = ρ, orbitals = ψ)

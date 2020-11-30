@@ -107,8 +107,8 @@ function lda(Z,
 
   # radial grid
   r, n, dx = exp.(x), length(x), step(x)
-  
-  r² = r .* r; sqr = sqrt.(r)
+  r², sqr = exp.(2x), exp.(x/2)
+
   @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
   vp = Vex.(r)
@@ -117,9 +117,6 @@ function lda(Z,
     ρ_in = TF.(r, Q) .* r
     @info "Using Thomas-Fermi starting electron density"
   end
-
-  nlevels = length(collect(Iterators.flatten(conf)))
-  ψ = zeros(n + 4, nlevels)
 
   Δ = laplacian(n, dx)
   L = Δ - Diagonal(fill(1/4, n))
@@ -160,13 +157,10 @@ function lda(Z,
       Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
       θ, y = eigen!(Hl, Hl + α*Diagonal(r²))
       ε = α*θ ./ (1 .- θ)
-      for (i, occ) in enumerate(subshell)
-        # normalize wavefunctions
-        y[:, i] *= 1 / sqrt(∫(dx, y[:, i] .^ 2 .* r²))
-        # build density
-        ρ_out .+= occ / 4π * y[:, i] .^ 2
-        # sum up the energy levels
-        ∑ε += occ * ε[i]
+      for (nᵣ, occ) in enumerate(subshell)
+        y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+        ρ_out .+= occ / 4π * y[:, nᵣ] .^ 2
+        ∑ε += occ * ε[nᵣ]
       end
     end
 
@@ -188,7 +182,7 @@ function lda(Z,
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
   # obtain orbitals
-  ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf)
+  ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ)
   
   # remove numerical noise
   ρ = [ifelse(x > eps(), x, 0.0) for x in ρ]
