@@ -75,7 +75,7 @@ function conf_enc(input::AbstractString;
         
         if !in(n, 1:maxn)
             throw(DomainError(subshell,
-            "Principal quantum number is out of range 1:10"))
+            "Principal quantum number is out of range 1:$maxn"))
             elseif l ≥ n
             throw(DomainError(subshell,
             "Azimuthal quantum number must be l < $n"))            
