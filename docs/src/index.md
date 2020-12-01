@@ -51,7 +51,7 @@ After that, radial Schrödinger equation takes convenient form for numerical sol
 
 [Atomic units](https://en.wikipedia.org/wiki/Hartree_atomic_units) are used 
 throughout, i.e. ``\hbar = 1`` and ``4\pi\epsilon_0 = 1``. It means that
-distances are in ``1\,a.\!u. = 0.529177\,\AA`` and coulomb potential is
+distances are in 1 a.u. = 0.529177 Angstrom and coulomb potential is
 ```math
 V(r) = -\frac{Z}{\epsilon r}
 ```
@@ -135,7 +135,7 @@ pseudospectral method that makes the algorithm compact and clear.
 The [generalized eigenvalue problem](https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix#Generalized_eigenvalue_problem)
 of eigenvalues of a symmetrical matrix ``H`` and a symmetrical, 
 positively defined matrix ``S`` is reduced to the symmetrical eigenvalues 
-problem using the [symmetrical Lövdin orthogonalization.](https://doi.org/10.1016/S0065-3276(08)60339-1)
+problem using the [symmetrical Löwdin orthogonalization.](https://doi.org/10.1016/S0065-3276(08)60339-1)
 ```math
 \mathrm{\underset{H'}{\underbrace{S^{-\frac{1}{2}}\cdot H\cdot S^{-\frac{1}{2}}}}\cdot\underset{y'}{\underbrace{S^{\frac{1}{2}}\cdot y}}=E\cdot\underset{y'}{\underbrace{S^{\frac{1}{2}}\cdot y}}}
 ```
@@ -232,4 +232,76 @@ S = β*H + α * Diagonal(r .* r);
 
 # see energy of the 1s-state of hydrogen atom
 ϵ[1]
+```
+## Functions for solving Schrödinger equation
+### Differentiation matrix
+
+```@docs
+laplacian
+```
+
+Using the following code, one can find the vibrational levels of the radical OH⋅,
+for which the potential energy surface is approximated through the [Morse potential](https://en.wikipedia.org/wiki/Morse_potential).
+
+```@example
+using AtomEnergyLevels
+using LinearAlgebra, Test, Printf
+
+# Morse potential
+V(x, D, β, x₀) = D*(exp(-β*(x-x₀))-1)^2 - D;
+
+# parameters of the O-H bond
+D  = 0.1994;   β = 1.189;  x₀ = 1.821;
+mH = 1.00794; mO = 15.9994; μ = 1822.8885*(mH*mO)/(mH+mO);  
+
+# grid
+x = (2.0 - x₀):0.1:(12.0 + x₀);
+
+# hamiltonian
+H = -1/2μ*laplacian(x) + Diagonal(V.(x, D, β, x₀));
+
+# numerical solution
+ϵ, ψ = eigen(H);                      
+
+# exact solution
+ω = β*sqrt(2D/μ); δ = ω^2 / 4D;  
+E(n) = ω*(n+1/2) - δ*(n+1/2)^2 - D;
+
+# comparison
+for i in 1:5
+  @printf "Level %i: E(exact) = %5.10f E(approx) = %5.10f\n" i E(i-1) ϵ[i]
+end
+```
+### Atomic electron configuration parsing
+```@docs
+conf_enc
+```
+### Radial Schrödinger equation solver
+```@docs
+radial_shr_eq
+```
+
+Using the following code, one can find the energy levels for a
+[spherically-symmetric three-dimensional harmonic oscillator.](https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator)
+
+To find the energy levels with quantum numbers nᵣ = 0, 1, 2 and l = 0, 1, 2,
+the levels of interest should be included in the electronic configuration.
+
+```@example
+using AtomEnergyLevels, Printf
+
+function isotropic_harmonic_oscillator(cfg)
+  ψ = radial_shr_eq(r -> 1/2*r^2, conf = conf_enc(cfg)).orbitals;
+  @printf("\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
+  for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+    nᵣ, l = quantum_numbers
+    ϵ_calc = orbital.ϵᵢ
+    n = nᵣ + l + 1
+    ϵ_exact = 2nᵣ + l + 3/2
+    @printf("%i%s\t%10.8f\t%10.8f\t%+0.6e\n",
+            n, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+  end
+end
+
+isotropic_harmonic_oscillator("1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1");
 ```

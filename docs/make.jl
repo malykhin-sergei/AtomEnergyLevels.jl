@@ -1,6 +1,8 @@
 using Documenter
 using AtomEnergyLevels
 
+DocMeta.setdocmeta!(AtomEnergyLevels, :DocTestSetup, :(using AtomEnergyLevels); recursive=true)
+
 makedocs(
     sitename = "AtomEnergyLevels",
     format = Documenter.HTML(),

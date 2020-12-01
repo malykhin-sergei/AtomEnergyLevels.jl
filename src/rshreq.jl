@@ -1,35 +1,51 @@
 """
-    radial_shr_eq(V, x, conf, μ, α)
+    radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange{T} = -30.0:0.1:5.0;
+    conf = 1, μ = 1.0, α = 1e5) where {T}
+    
+    radial_shr_eq(V::Array{S}, x::AbstractRange{T}; 
+    conf = 1, μ = 1.0, α = 1e5) where {S, T}
 
-Solve Schrödinger equation (atomic units are assumed)
-
-    H = -1/2μ*Δ + V(r)
-
+Solve Schrödinger equation ([atomic units](https://en.wikipedia.org/wiki/Hartree_atomic_units) are assumed)
+```math
+-\\frac{1}{2\\mu}\\left[\\frac{1}{r^{2}}\\frac{\\partial}{\\partial r}\\left(r^{2}\\frac{\\partial R_{nl}}{\\partial r}\\right)-\\frac{l(l+1)}{r^{2}}R_{nl}(r)\\right]+V(r)R_{nl}(r)=E_{nl}R_{nl}(r)
+```
 for [the particle in a spherically symmetric potential.](https://en.wikipedia.org/wiki/Particle_in_a_spherically_symmetric_potential)
 
-# On input:
+## On input:
 
-* `V` - potential, provided as explicit function V(r) (by default `r -> -1/r`), or array of values on a radial grid r.
-* `x` - uniform grid (range object), such as rᵢ = exp(xᵢ). Default grid is `-30.0:0.1:5.0`
+* `V` - potential, provided as an explicit function ``V(r)`` (by default `r -> -1/r`), or an array of values on a radial grid.
+* `x` - uniform grid (`AbstractRange` object), such as ``r_i = \\exp(x_i)``. Default grid is `-30.0:0.1:5.0`
 * `conf` - electronic configuration of interest, by default: ground state `conf = ((1.0),)`
-* `μ` - reduced mass, by default `μ = 1.0` (electron mass in a.u.)
-* `α` - parameter `α = 1e5` is used in the matrix pencil `H + α*Diagonal(r²)` for the generalized eigenproblem solution.
+* `μ` - [reduced mass](https://en.wikipedia.org/wiki/Reduced_mass), by default `μ = 1.0` (electron mass in a.u.)
+* `α` - parameter ``α = 10^5`` is used in the matrix pencil ``\\mathrm{H} + α\\mathrm{S}`` for the generalized eigenproblem.
 
-# On output function returns:
+## On output function returns:
 
-* sum of one-particle energies: E = ∑nᵢ*εᵢ
-* particles density: ρ(x) = 1/4π * ∑nᵢ*ψᵢ²(x)
-* orbitals ψᵢ(x), corresponding eigenvalues εᵢ (energy levels), azimuthal and radial quantum numbers l, nᵣ, and level populations nᵢ (as listed in `conf`).
+* sum of one-particle energies: ``E = \\sum_{i=1}^{N} n_i \\epsilon_i``
+* particles density: ``\\rho(x) = \\frac{1}{4\\pi} \\sum_{i=1}^{N} n_i y_{i}^{2}(x)``
+* orbitals ``y_i(x)``, corresponding eigenvalues ``\\epsilon_i`` (energy levels), azimuthal and radial quantum numbers ``l``, ``n_r``, and level populations ``n_i`` (as listed in `conf`).
 
-# Examples
+## Examples
 [Hydrogen atom](https://en.wikipedia.org/wiki/Hydrogen_atom)
 
-```julia-repl
-julia> radial_shr_eq(r -> -1/r).energy # n = 1 (ground state)
--1.9999999999812186
+```jldoctest
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("1s1")).energy ≈ -1/2
+true
 
-julia> radial_shr_eq(r -> -1/r, conf = ((0, 1),)).energy # n = 2 (excited state)
--0.12499999998289188
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("2s1")).energy ≈ -1/8
+true
+
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("2p1")).energy ≈ -1/8
+true
+
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3s1")).energy ≈ -1/18
+true
+
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3p1")).energy ≈ -1/18
+true
+
+julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3d1")).energy ≈ -1/18
+true
 ```
 """
 radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange{T} = -30.0:0.1:5.0;
