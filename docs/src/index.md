@@ -281,6 +281,8 @@ conf_enc
 radial_shr_eq
 ```
 
+#### Isotropic harmonic oscillator
+
 Using the following code, one can find the energy levels for a
 [spherically-symmetric three-dimensional harmonic oscillator.](https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator)
 
@@ -304,4 +306,71 @@ function isotropic_harmonic_oscillator(cfg)
 end
 
 isotropic_harmonic_oscillator("1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1");
+```
+
+#### Kratzer Potential
+
+```@example
+using AtomEnergyLevels, Printf
+
+"""
+Solutions of the Schrödinger Equation for the Kratzer Potential.
+A. Kratzer, "Die ultraroten Rotationsspektren der Halogenwasserstoffe," 
+Zeitschrift für Physik, 3(5), 1920 pp. 289–307. doi:10.1007/BF01327754
+
+See also 
+https://demonstrations.wolfram.com/ExactSolutionsOfTheSchroedingerEquationForTheKratzerPotentia/
+"""
+function kratzer(D, a, levels::Union{UnitRange{Int64}, Int64} = 0)
+    cfg = join(collect(levels) .+ 1, "s1 ") * "s1"
+    ψ = radial_shr_eq(r -> -2D*(a/r - a^2 / 2r^2), 
+        conf = conf_enc(cfg, maxn = last(levels) + 1)).orbitals
+    
+    μ = 1/2*sqrt(1 + 8a^2*D)
+
+    @printf("\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
+    for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+      nᵣ, l = quantum_numbers
+      ϵ_calc = orbital.ϵᵢ
+      n = nᵣ + l + 1
+      ϵ_exact = -2a^2 * D^2 / (nᵣ + μ + 1/2)^2
+      @printf("%i%s\t%11.8f\t%11.8f\t%+0.6e\n",
+              n, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+    end    
+end
+
+kratzer(2.5, 1.25, 0:10)
+```
+
+#### Pseudoharmonic Potential
+
+```@example
+using AtomEnergyLevels, Printf
+
+"""
+Solutions of the Schrödinger Equation for Pseudoharmonic Potential.
+
+I.I. Gol'dman and V.D. Krivchenkov, Problems in Quantum Mechanics 
+(B. T. Geǐlikman, ed., E. Marquit and E. Lepa, trans.), Reading, MA: Addison-Wesley, 1961.‬
+
+See also
+https://demonstrations.wolfram.com/ExactSolutionsOfTheSchroedingerEquationForPseudoharmonicPote/
+"""
+function pseudoharmonic(D, a, levels::Union{UnitRange{Int64}, Int64} = 0)
+    cfg = join(collect(levels) .+ 1, "s1 ") * "s1"
+    ψ = radial_shr_eq(r -> D*(r/a - a/r)^2, -5.0:0.01:4.0,
+        conf = conf_enc(cfg, maxn = last(levels) + 1)).orbitals
+
+    @printf("\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
+    for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
+      nᵣ, l = quantum_numbers
+      ϵ_calc = orbital.ϵᵢ
+      n = nᵣ + l + 1
+      ϵ_exact = sqrt(D/2)/a * (2 + 4nᵣ - 2a * sqrt(2D) + sqrt(1 + 8D * a^2))
+      @printf("%i%s\t%11.8f\t%11.8f\t%+0.6e\n",
+              n, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+    end    
+end
+
+pseudoharmonic(1, 2, 0:10)
 ```
