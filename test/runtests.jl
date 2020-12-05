@@ -2,6 +2,47 @@ using AtomEnergyLevels
 using Test, Printf
 
 @testset "AtomEnergyLevels.jl" begin
+  @testset "Parsing electronic configuration" begin
+    @test_throws DomainError conf_enc("[Ge] 1s1")
+    @test_throws DomainError conf_enc("[Rn]", maxn = 5)
+    @test_throws DomainError conf_enc("[He] 2d1")
+    @test_throws DomainError conf_enc("1s2", spins = 1)
+    @test_throws DomainError conf_enc("[He] 1s2")
+  end
+  
+  @testset "DFT functionals" begin
+    rₛ = [2, 5, 10, 20, 50, 100]
+    ρ = 1 ./ (4π/3 * rₛ .^ 3)
+
+    ϵ_vwn5 = [-0.0447827886146218,  -0.0281337622897314,  -0.0185445271694030,  
+              -0.0115476822648961,  -0.0057034884827245,  -0.0031846468815323]
+    v_vwn5 = [-0.0516038239497904,  -0.0333841710353646,  -0.0225183261458631,  
+              -0.0143300153523442,  -0.0072495456200668,  -0.0041038158928284]
+
+    ϵ_chac = [-0.0434298249201931,  -0.0276172696449811,  -0.0183235042675089,  
+              -0.0113396589743083,  -0.0054215811399318,  -0.0029196229936562]
+    v_chac = [-0.0499160959362279,  -0.0326396845509736,  -0.0222371196290851,  
+              -0.0141507122981238,  -0.0069772050422708,  -0.0038156875497190]
+
+    ϵ_kars = [-0.0443192000481967,  -0.0284068582092410,  -0.0189842559795704,  
+              -0.0118365008800258,  -0.0057060293697329,  -0.0030856772804251]
+    v_kars = [-0.0508289797329295,  -0.0334799363319143,  -0.0229702482448040,  
+              -0.0147298882834416,  -0.0073292434724395,  -0.0040278230473728]
+
+    for (i, ρᵢ) in enumerate(ρ)
+      vᵢ, ϵᵢ = LDA_C_VWN(ρᵢ)
+      @test ϵᵢ ≈ ϵ_vwn5[i]
+      @test vᵢ ≈ v_vwn5[i]
+#      vᵢ, ϵᵢ = LDA_C_CHACHIYO(ρᵢ)
+#      @test ϵᵢ ≈ ϵ_chac[i] atol = 1e-7
+#      @test vᵢ ≈ v_chac[i] atol = 1e-7
+#FIXME
+#      vᵢ, ϵᵢ = LDA_C_KARASIEV(ρᵢ)
+#      @test ϵᵢ ≈ ϵ_kars[i]
+#      @test vᵢ ≈ v_kars[i]
+    end
+  end
+
   @testset "3D isotropic harmonic oscillator" begin
     @info "3D isotropic harmonic oscillator"
     @info "https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator#Example:_3D_isotropic_harmonic_oscillator"
