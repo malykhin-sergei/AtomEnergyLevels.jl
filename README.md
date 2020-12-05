@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl.svg?branch=master)](https://travis-ci.com/malykhin-sergei/AtomEnergyLevels.jl)
 [![Coverage Status](https://coveralls.io/repos/github/malykhin-sergei/AtomEnergyLevels.jl/badge.svg?branch=master)](https://coveralls.io/github/malykhin-sergei/AtomEnergyLevels.jl?branch=master)
+[![codecov](https://codecov.io/gh/malykhin-sergei/AtomEnergyLevels.jl/branch/master/graph/badge.svg?token=SZG44ANDAN)](https://codecov.io/gh/malykhin-sergei/AtomEnergyLevels.jl)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://malykhin-sergei.github.io/AtomEnergyLevels.jl/dev/)
 
 Solve numerically
