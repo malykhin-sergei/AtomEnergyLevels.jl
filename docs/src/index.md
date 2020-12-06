@@ -20,7 +20,7 @@ where ``\Delta`` - [Laplace operator](https://en.wikipedia.org/wiki/Laplace_oper
 ``\mu`` - [reduced mass](https://en.wikipedia.org/wiki/Reduced_mass),
 ``R_{nl}(r)`` - radial part of a wavefunction,
 ``E_{nl}`` - eigenstate of a system (energy level).
-The eigenfunctions take the form
+The eigenfunctions are
 ```math
 \psi(r,\,\theta,\,\phi)=R_{nl}(r)\cdot Y_{lm}(\theta,\,\phi)
 ```
@@ -30,12 +30,12 @@ The substitution
 ```math
 R_{nl}(r)=\frac{1}{r}P_{nl}(r)
 ```
-results in Schrödinger equation of the form:
+can be used to write the radial Schrödinger equation as:
 ```math
 -\frac{\hbar^{2}}{2m}\left[\frac{\partial^{2}P_{nl}}{\partial r^{2}}-\frac{l(l+1)}{r^{2}}P_{nl}(r)\right]+V(r)P_{nl}(r)=E_{nl}P_{nl}(r)
 ```
-To solve the latter equation the variable ``r`` and eigenfunction ``P_{nl}(r)``
-are changed to ``x`` and ``y_{nl}(x)``, where
+Variable ``r`` and eigenfunction ``P_{nl}(r)`` can be changed to ``x`` and ``y_{nl}(x)``
+for the convenience of numerical solution.
 
 ```math
 \begin{aligned}
@@ -44,14 +44,15 @@ y_{nl}(x) &= \frac{1}{\sqrt{r}}P_{nl}\left(r(x)\right)
 \end{aligned}
 ```
 
-After that, radial Schrödinger equation takes convenient form for numerical solution.
+After that, the radial Schrödinger equation is following.
 ```math
 -\frac{1}{2\mu}\frac{\partial^{2}y_{nl}(x)}{\partial x^{2}}+\left(\frac{1}{2\mu}\left(l+\frac{1}{2}\right)^{2}+r^{2}V(r)\right)y_{nl}(x)=r^{2}E_{nl}y_{nl}(x)
 ```
+in [Atomic units](https://en.wikipedia.org/wiki/Hartree_atomic_units), 
+as we use throughout, i.e. ``\hbar = 1`` and ``4\pi\epsilon_0 = 1``. 
+It means that distances are in 1 a.u. = 0.529177 Angstrom and Coulomb 
+potential is
 
-[Atomic units](https://en.wikipedia.org/wiki/Hartree_atomic_units) are used
-throughout, i.e. ``\hbar = 1`` and ``4\pi\epsilon_0 = 1``. It means that
-distances are in 1 a.u. = 0.529177 Angstrom and coulomb potential is
 ```math
 V(r) = -\frac{Z}{\epsilon r}
 ```
@@ -60,13 +61,15 @@ V(r) = -\frac{Z}{\epsilon r}
 
 [Pseudospectral method](https://en.wikipedia.org/wiki/Collocation_method) is
 convenient approach to code a solution of differential equation. The wavefunction
-is taken as a linear combination of [sinc-functions.](https://en.wikipedia.org/wiki/Sinc_function)
+is taken as a linear combination of basis [sinc-functions.](https://en.wikipedia.org/wiki/Sinc_function)
+
 ```math
 \begin{aligned}
 y(x) &= \sum_{i=1}^{n}c_{i}\phi_{i}(x)\\
 \phi_{i}(x) &= \frac{\sin\left(\pi(x-x_{i})/h\right)}{\pi(x-x_{i})/h}
 \end{aligned}
 ```
+
 Discrete grid
 ```math
 x_{i}=x_{min}+i\cdot h
@@ -78,7 +81,7 @@ where ``i=1\ldots n`` and step size ``h``, defines basis set, since
 0 & \text{for} & i\neq j
 \end{array}\right.
 ```
-Coefficients are values of the function on a grid.
+coefficients are values of the function on a grid.
 ```math
 c_i = y(x_i)
 ```
@@ -110,13 +113,13 @@ where matrices for the first and second derivatives are
 \frac{2(-1)^{n}}{(n-1)^{2}} & \cdots & -\frac{1}{2} & 2 & -\frac{\pi^{2}}{3}
 \end{array}\right)
 ```
-With these matrices, the numerical solution of Schrödinger equation becomes
-a linear algebra problem. For this we have the following ingredients:
+With these matrices, a numerical solution of Schrödinger equation becomes
+a linear algebra problem. For this to be done, we have the following ingredients:
 
-1. logarithmic grid ``r_i=\exp(x_i)`` on which vectors are calculated: orbitals ``y_k`` and potential ``V(r)``,
+1. logarithmic grid ``x_i = \ln(r_i)`` on which vectors are calculated: orbitals ``y_k`` and potential ``V(r)``,
 2. diagonal matrices: ``\mathrm{S} = r_i^2`` and ``\mathrm{V_{\text{eff}}}=\frac{1}{2\mu}\left(l+\frac{1}{2}\right)^{2}+r_i^{2}V(r_i)``,  
 3. kinetic energy operator ``\mathrm{K}=-\frac{1}{2\mu}\cdot D^{(2)}``,
-4. Hamiltonian operator ``\mathrm{H = K + V_{\text{eff}}}``.
+4. hamiltonian operator ``\mathrm{H = K + V_{\text{eff}}}``.
 
 Variants of this approach can be found in the documentation
 [A Matlab Differentiation Matrix Suite.](http://appliedmaths.sun.ac.za/~weideman/research/differ.html)
@@ -134,7 +137,7 @@ pseudospectral method that makes the algorithm compact and clear.
 ```
 The [generalized eigenvalue problem](https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix#Generalized_eigenvalue_problem)
 of eigenvalues of a symmetrical matrix ``H`` and a symmetrical,
-positively defined matrix ``S`` is reduced to the symmetrical eigenvalues
+positively defined matrix ``S`` can be reduced to the symmetrical eigenvalues
 problem using the [symmetrical Löwdin orthogonalization.](https://doi.org/10.1016/S0065-3276(08)60339-1)
 ```math
 \mathrm{\underset{H'}{\underbrace{S^{-\frac{1}{2}}\cdot H\cdot S^{-\frac{1}{2}}}}\cdot\underset{y'}{\underbrace{S^{\frac{1}{2}}\cdot y}}=E\cdot\underset{y'}{\underbrace{S^{\frac{1}{2}}\cdot y}}}
@@ -148,16 +151,15 @@ where
 \frac{H_{n1}}{r_{n}r_{1}} & \cdots &  & \frac{H_{nn}}{r_{n}^{2}}
 \end{array}\right)
 ```
-However, the floating point representation of numbers leads to a loss of
-symmetry of the matrix ``H'`` due to non-associativity.
+However, the floating point representation of numbers leads to symmetry loss of
+the matrix ``H'`` due to non-associativity.
 ```math
 H_{ij}/r_i/r_j \neq H_{ji}/r_j/r_i
 ```
 [The standard algorithm implemented in the LAPACK library](http://www.netlib.org/lapack/lug/node54.html)
 for the generalized eigenvalue problem uses the [Cholesky decomposition](https://en.wikipedia.org/wiki/Cholesky_decomposition),
 but its scope [is limited](http://www.netlib.org/utk/people/JackDongarra/etemplates/node177.html#sec:gsym_pert)
-to the case when the ``\mathrm{S}`` matrix is well defined, i.e.
-condition number
+to the case when ``\mathrm{S}`` matrix is well defined, i.e. condition number
 ```math
 k(\mathrm{S})\equiv\left\Vert \mathrm{S}\right\Vert _{2}\cdot\left\Vert \mathrm{S}^{-1}\right\Vert _{2}
 ```
@@ -179,7 +181,7 @@ Setting ``\beta = 1`` and ``\alpha = 10^5`` we make new matrix
 ```math
 \mathrm{S' = \alpha S + H}
 ```
-which is positive definite and well-conditioned, then solve
+which is positive definite and well-conditioned, then solve the problem
 ```math
 \mathrm{H \cdot y = \theta \cdot S' \cdot y}
 ```
@@ -187,7 +189,7 @@ using standard LAPACK routine. Eigenvalues of interest are found with
 ```math
 \epsilon_i = \frac{\alpha \cdot \theta_i}{1 - \theta_i}
 ```
-This approach is used here.
+This approach is used in the present code.
 
 ### Sketch of the solution
 
@@ -374,3 +376,21 @@ end
 
 pseudoharmonic(1, 2, 0:10)
 ```
+
+## Kohn-Sham equations
+
+The [Kohn–Sham equations](https://en.wikipedia.org/wiki/Kohn%E2%80%93Sham_equations) 
+consist of the radial Schrödinger equation above with an with an effective 
+potential ``V(r)`` given by
+```math
+V = v_H + v_{xc} + v_{ext}
+```
+where ``v_H`` is the [Hartree potential](https://en.wikipedia.org/wiki/Hartree_equation) 
+given by the solution of the radial [Poisson equation](https://en.wikipedia.org/wiki/Poisson%27s_equation),
+``v_{xc}`` is the exchange-correlation potential and ``v_{ext}`` is the
+external potential (most offen electron-nuclear ``v_{ext} = -Z/r`` interaction).
+
+### Poisson equation and the Hartree potential
+
+https://arxiv.org/pdf/1209.1752v2.pdf
+https://github.com/aromanro/DFTAtom
