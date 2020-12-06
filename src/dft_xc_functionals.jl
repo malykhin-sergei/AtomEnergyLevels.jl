@@ -10,10 +10,7 @@ end
 
 # T. Chachiyo, J. Chem. Phys. 145, 021101 (2016);
 # https://doi.org/10.1063/1.4958669
-function LDA_C_CHACHIYO(ρ;
-  a  = -0.01554535, # = (log(2) - 1) / 2π^2,
-  b₁ = 20.4562557,
-  b  = 20.4562557)
+function LDA_C_CHACHIYO(ρ; a  = -0.01554535, b₁ = 20.4562557, b  = 20.4562557)
 
   ρ <= eps() && return 0.0, 0.0
 
@@ -45,7 +42,6 @@ function LDA_C_VWN(ρ)
   ϵc = a * (log(rs/fx) + f1 * qx - f2 * (log((rs12 - x0)^2 / fx) + f3 * qx))
   tx = 2.0 * rs12 + b
   tt = tx * tx + q * q
-  vc = ϵc - rs12 * a / 6.0 * (2.0 / rs12 - tx / fx - 4.0 * b /
-     tt - f2 * (2.0 / (rs12 - x0) - tx / fx - 4.0 * (2.0 * x0 + b) / tt))
+  vc = ϵc - rs12 * a / 6.0 * (2.0 / rs12 - tx / fx - 4.0 * b / tt - f2 * (2.0 / (rs12 - x0) - tx / fx - 4.0 * (2.0 * x0 + b) / tt))
   return [vc; ϵc]
 end
