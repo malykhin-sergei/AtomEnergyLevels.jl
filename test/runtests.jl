@@ -2,6 +2,13 @@ using AtomEnergyLevels
 using Test, Printf
 
 @testset "AtomEnergyLevels.jl" begin
+  @testset "Differentiation matrices" begin
+    x = -6:0.01:6
+    d²f_ex = 2(2x.^2 .- 1).*exp.(-x.^2)
+    d²f_ap = laplacian(x) * exp.(-x.^2)
+    @test d²f_ex ≈ d²f_ap
+  end
+
   @testset "Parsing electronic configuration" begin
     @test_throws DomainError conf_enc("[Ge] 1s1")
     @test_throws DomainError conf_enc("[Rn]", maxn = 5)
