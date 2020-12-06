@@ -167,7 +167,7 @@ is not large. In our case, this number is very large, ca ``10^{52}``
 ```math
 k(\mathrm{S})=\sqrt{\sum_{i}r_{i}^{2}}\cdot\sqrt{\sum_{i}\frac{1}{r_{i}^{2}}}>\frac{r_{max}}{r_{min}}
 ```
-To remedy the problem, note that eigenvalues of [matrix pencils](https://en.wikipedia.org/wiki/Matrix_pencil)
+To remedy the problem, note that eigenvectors of [matrix pencils](https://en.wikipedia.org/wiki/Matrix_pencil)
 ``(\mathrm{H,S})`` and ``(\mathrm{H,\alpha S + \beta H})`` are same, when
 matrix ``\mathrm{\alpha S + \beta H}`` is positive definite. Then
 ```math
