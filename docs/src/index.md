@@ -381,14 +381,45 @@ pseudoharmonic(1, 2, 0:10)
 
 The [Kohn–Sham equations](https://en.wikipedia.org/wiki/Kohn%E2%80%93Sham_equations) 
 consist of the radial Schrödinger equation above with an with an effective 
-potential ``V(r)`` given by
+potential ``v_s(r)`` given by
 ```math
-V = v_H + v_{xc} + v_{ext}
+v_s = V_H + V_{xc} + v_{ext}
 ```
-where ``v_H`` is the [Hartree potential](https://en.wikipedia.org/wiki/Hartree_equation) 
+where ``V_H`` is the [Hartree potential](https://en.wikipedia.org/wiki/Hartree_equation) 
 given by the solution of the radial [Poisson equation](https://en.wikipedia.org/wiki/Poisson%27s_equation),
-``v_{xc}`` is the exchange-correlation potential and ``v_{ext}`` is the
+``V_{xc}`` is the exchange-correlation potential and ``v_{ext}`` is the
 external potential (most offen electron-nuclear ``v_{ext} = -Z/r`` interaction).
+
+[The total energy is given by](https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy):
+```math
+E[n] = T_s[n] + E_H[n] + E_{xc}[n] + V[n]
+```
+where
+```math
+\begin{aligned}
+T_s[n] &= \sum_i \epsilon_i -\int v_s({\bf r})n({\bf r})\mathrm{d^3}r\\
+E_H[n] &= \frac{1}{2}\int V_H({\bf r}) n({\bf r}) \mathrm{d^3}r\\
+E_{xc}[n] &= \int \epsilon_{xc}({\bf r};n) n({\bf r}) \mathrm{d^3}r\\
+V[n] &= \int v_{ext}({\bf r}) n({\bf r}) \mathrm{d^3}r
+\end{aligned}
+```
+
+Summing up all expressions we obtain final formula.
+
+```math
+E[n] = \sum_i \epsilon_i + \int \left[-\frac{1}{2}V_H({\bf r}) - V_{xc}({\bf r}) + \epsilon_{xc}({\bf r};n)\right] n({\bf r}) \mathrm{d^3}r
+```
+
+```julia
+Etot = ∑ε + 4π * ∫(dx, ρ_out .* (-1/2 * vh .- vxc .+ εxc) .* r²)
+```
+
+!!! note
+
+    It is generally accepted to denote by the letters ``n`` - particle density,
+    and ``\rho`` - charge density. However, this is not convenient
+    in a code. For this reason I have chosen `ρ` to denote *electronic particle density*
+    in a code throughout.
 
 ### Poisson equation and the Hartree potential
 
@@ -451,3 +482,54 @@ vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
 # Change variable vh(x) → vh(r)
 vh ./= sqr
 ```
+
+### Exchange-correlation potential
+
+An exchange-correlation potential ``V_{xc}`` and exchange-correlation
+energy density are
+
+```math
+\begin{aligned}
+V_{xc}(r) & = V_{x}(r) + V_{c}(r)\\
+\epsilon_{xc}(r) & = \epsilon_{x}(r) + \epsilon_{c}(r)
+\end{aligned}
+```
+
+In the [local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-density_approximation)
+``\epsilon_x(r)`` is taken equal to the exchange energy density of the
+[homogeneous electron gas](https://en.wikipedia.org/wiki/Jellium).
+
+```math
+\epsilon_{x}(r) = \epsilon_{x}\left[\rho(r)\right] = -\alpha \frac{9}{4} \left(\frac{3\rho(r)}{8π}\right)^{\frac{1}{3}}
+```
+where parameter ``\alpha = 2/3``. Density of the correlation energy of the homogeneous electron gas
+has not analytic formula, but can be interpolated. For example, one of the most simple expressions
+is [Chachiyo correlation functional.](https://doi.org/10.1063/1.4958669)
+
+```math
+\epsilon_c(r_s)=a \ln \left(1 + \frac{b}{r_s} + \frac{b}{r_s^2}\right)
+```
+where ``r_s`` is Wigner-Seitz parameter, related to the density as
+```math
+\frac{4}{3}\pi r_s^3 = \frac{1}{\rho}
+```
+and ``a``, ``b`` are fitting parameters.
+
+The exchange-correlation potential corresponding to the exchange-correlation energy 
+for a local density approximation is given by
+
+```math
+V_{xc}(r) = \frac{\delta E^{LDA}}{\delta n({\bf r})} = \epsilon_{xc}(n({\bf r})) + n({\bf r})\frac{\partial \epsilon_{xc}(n({\bf r}))}{\partial n({\bf r})}
+```
+
+Therefore, in LDA it is simple ``\epsilon_x = \frac{3}{4} V_x``
+
+At present, the following LDA functionals are implemented.
+
+```@docs
+LDA_X
+LDA_C_CHACHIYO
+LDA_C_VWN
+```
+
+### Self-consistent field
