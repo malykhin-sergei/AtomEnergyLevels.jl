@@ -392,5 +392,62 @@ external potential (most offen electron-nuclear ``v_{ext} = -Z/r`` interaction).
 
 ### Poisson equation and the Hartree potential
 
-https://arxiv.org/pdf/1209.1752v2.pdf
-https://github.com/aromanro/DFTAtom
+Coulomb repulsion between electrons is accounted for under the form of an
+average field ``v_H`` (Hartree potential), containing the combined repulsion 
+from all other electrons on the electron that we are considering. 
+Hartree potential is however not a *true* potential, since it depends upon 
+the charge density distributions of the electrons, that depend in turn upon 
+the solutions of the Kohn-Sham equations. The equations can be solved in an 
+iterative way, after an initial guess of the orbitals is assumed.
+
+In this section we present the algorithm of solution the Poisson equation
+for the charge distribution ``\rho(r)`` with the spherical symmetry.
+The solution to Poisson's equation is the potential field caused by a given 
+electric charge density distribution.
+
+```math
+\Delta v_{H}(r)=-4\pi \rho(r)
+```
+Substituting ``v_H(r) = \frac{U(r)}{r}`` we obtain
+```math
+\frac{d^2U}{dr^2}=-4\pi \rho(r)
+```
+This is ordinary differential equation of order two, defined on interval ``[0, \infty]``.
+In order to solve this equation two boundary conditions are needed. These are
+``U(0) = 0`` and ``U(\infty) = Q``, where ``Q`` - total charge. 
+They are [Dirichlet boundary conditions](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition), 
+therefore, exist ``\alpha`` and ``\beta`` for ``\tilde{U}(r)`` (any solution of differential equation, not necessary fulfilling the boundary conditions) then the function
+```math
+U(r) = \tilde{U}(r) + \alpha r + \beta
+```
+is the solution of Poisson equation that fulfills the boundary conditions.
+
+On the logarithmic grid ``x = \ln(r)`` the Poisson equation takes form
+```math
+\left(\frac{\partial^{2}}{\partial x^{2}}-\frac{1}{4}\right)v_{H}(x)=-4\pi r^{2}\sqrt{r}\cdot\rho(x)
+```
+where ``v_H(r) = v_H(x)/\sqrt{r}``. 
+
+Again, this equation can easily be solved via pseudospectral approach. On a logarithmic grid
+``r_{min}`` plays role of zero, and ``r_{max}`` is practically infinity. A solution taken as
+```math
+v_H(x)=\tilde{v}_H(x)-\frac{\tilde{v}_H(x_{max})-Q/\sqrt{r_{max}}}{\sqrt{r_{max}}}\cdot \sqrt{r}-\frac{\tilde{v}_H(x_{min})-Q\cdot \sqrt{r_{min}}}{\sqrt{r}}\cdot \sqrt{r_{min}}
+```
+where ``\tilde{v}_H(x)`` - pseudospectral solution, is what we searching for, since
+```math
+v_H(x_{min})\approx Q\cdot \sqrt{r_{min}}
+```
+and
+```math
+v_H(x_{max}) \approx Q/\sqrt{r_{max}}
+```
+Here is how it coded.
+```julia
+# Solve the Poisson equation to obtain Hartree potential
+vh = L \ (-4π * ρ_in .* sqr .* r)
+# Apply boundary conditions at r → 0 and r → ∞
+vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
+       (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
+# Change variable vh(x) → vh(r)
+vh ./= sqr
+```
