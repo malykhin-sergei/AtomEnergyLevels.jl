@@ -5,7 +5,7 @@
 function LDA_X(ρ; α = 2/3)
   vx = -3α * (3ρ/8π)^(1/3)
   ϵx = 3/4 * vx
-  return [vx; ϵx]
+  return vx, ϵx
 end
 
 # T. Chachiyo, J. Chem. Phys. 145, 021101 (2016);
@@ -18,7 +18,7 @@ function LDA_C_CHACHIYO(ρ; a  = -0.01554535, b₁ = 20.4562557, b  = 20.4562557
 
   ϵc = a * log(1 + b₁ / rs + b / rs^2)
   vc = ϵc + a * (b₁ * rs + 2b) / (3 * (rs^2 + b₁ * rs + b))
-  return [vc; ϵc]
+  return vc, ϵc
 end
 
 # V. V. Karasiev, J. Chem. Phys. 145, 157101 (2016) (doi: 10.1063/1.4964758)
@@ -43,5 +43,5 @@ function LDA_C_VWN(ρ)
   tx = 2.0 * rs12 + b
   tt = tx * tx + q * q
   vc = ϵc - rs12 * a / 6.0 * (2.0 / rs12 - tx / fx - 4.0 * b / tt - f2 * (2.0 / (rs12 - x0) - tx / fx - 4.0 * (2.0 * x0 + b) / tt))
-  return [vc; ϵc]
+  return vc, ϵc
 end
