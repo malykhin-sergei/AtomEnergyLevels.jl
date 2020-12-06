@@ -11,7 +11,7 @@ end
 # T. Chachiyo, J. Chem. Phys. 145, 021101 (2016);
 # https://doi.org/10.1063/1.4958669
 function LDA_C_CHACHIYO(ρ;
-  a  = (log(2) - 1) / 2π^2,
+  a  = -0.01554535, # = (log(2) - 1) / 2π^2,
   b₁ = 20.4562557,
   b  = 20.4562557)
 
@@ -25,7 +25,7 @@ function LDA_C_CHACHIYO(ρ;
 end
 
 # V. V. Karasiev, J. Chem. Phys. 145, 157101 (2016) (doi: 10.1063/1.4964758)
-LDA_C_KARASIEV(ρ) = LDA_C_CHACHIYO(ρ, b₁ = 21.7392245)
+# LDA_C_KARASIEV_MOD(ρ) = LDA_C_CHACHIYO(ρ, b₁ = 21.7392245)
 
 # S.H. Vosko, L. Wilk, and M. Nusair, Can. J. Phys. 58, 1200 (1980)
 # http://doi.org/10.1139/p80-159

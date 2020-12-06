@@ -9,6 +9,13 @@ makedocs(
     modules = [AtomEnergyLevels]
 )
 
+if "deploy" in ARGS
+  include("../../faketravis.jl")
+end
+
 deploydocs(
     repo = "github.com/malykhin-sergei/AtomEnergyLevels.jl.git",
+    target = "build",
+    branch = "gh-pages",
+    devbranch = "master",
 )
