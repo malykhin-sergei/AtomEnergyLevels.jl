@@ -235,7 +235,7 @@ S = β*H + α * Diagonal(r .* r);
 # see energy of the 1s-state of hydrogen atom
 ϵ[1]
 ```
-## Functions for solving Schrödinger equation
+## Schrödinger equation
 ### Differentiation matrix
 
 ```@docs
@@ -409,6 +409,11 @@ Summing up all expressions we obtain final formula.
 ```math
 E[n] = \sum_i \epsilon_i + \int \left[-\frac{1}{2}V_H({\bf r}) - V_{xc}({\bf r}) + \epsilon_{xc}({\bf r};n)\right] n({\bf r}) \mathrm{d^3}r
 ```
+where ``\epsilon_{xc}({\bf r};n)`` is a universal potential fundamentally related to ``V_{xc}``
+by 
+```math
+V_{xc} = \frac{dn\epsilon_{xc}}{dn}
+```
 
 ```julia
 Etot = ∑ε + 4π * ∫(dx, ρ_out .* (-1/2 * vh .- vxc .+ εxc) .* r²)
@@ -432,20 +437,21 @@ the solutions of the Kohn-Sham equations. The equations can be solved in an
 iterative way, after an initial guess of the orbitals is assumed.
 
 In this section we present the algorithm of solution the Poisson equation
-for the charge distribution ``\rho(r)`` with the spherical symmetry.
+for the charge distribution ``\rho({\bf r}) = -n({\bf r})`` with the spherical symmetry.
 The solution to Poisson's equation is the potential field caused by a given 
 electric charge density distribution.
 
 ```math
-\Delta v_{H}(r)=-4\pi \rho(r)
+\Delta v_{H}(r)=-4\pi n(r)
 ```
 Substituting ``v_H(r) = \frac{U(r)}{r}`` we obtain
 ```math
-\frac{d^2U}{dr^2}=-4\pi \rho(r)
+\frac{d^2U}{dr^2}=-4\pi n(r)
 ```
 This is ordinary differential equation of order two, defined on interval ``[0, \infty]``.
 In order to solve this equation two boundary conditions are needed. These are
-``U(0) = 0`` and ``U(\infty) = Q``, where ``Q`` - total charge. 
+``U(0) = 0`` and ``U(\infty) = Q``, where ``Q`` - total charge.
+
 They are [Dirichlet boundary conditions](https://en.wikipedia.org/wiki/Dirichlet_boundary_condition), 
 therefore, exist ``\alpha`` and ``\beta`` for ``\tilde{U}(r)`` (any solution of differential equation, not necessary fulfilling the boundary conditions) then the function
 ```math
@@ -455,7 +461,7 @@ is the solution of Poisson equation that fulfills the boundary conditions.
 
 On the logarithmic grid ``x = \ln(r)`` the Poisson equation takes form
 ```math
-\left(\frac{\partial^{2}}{\partial x^{2}}-\frac{1}{4}\right)v_{H}(x)=-4\pi r^{2}\sqrt{r}\cdot\rho(x)
+\left(\frac{\partial^{2}}{\partial x^{2}}-\frac{1}{4}\right)v_{H}(x)=-4\pi r^{2}\sqrt{r}\cdot n(x)
 ```
 where ``v_H(r) = v_H(x)/\sqrt{r}``. 
 
@@ -500,7 +506,7 @@ In the [local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-d
 [homogeneous electron gas](https://en.wikipedia.org/wiki/Jellium).
 
 ```math
-\epsilon_{x}(r) = \epsilon_{x}\left[\rho(r)\right] = -\alpha \frac{9}{4} \left(\frac{3\rho(r)}{8π}\right)^{\frac{1}{3}}
+\epsilon_{x}(r) = \epsilon_{x}\left[n(r)\right] = -\alpha \frac{9}{4} \left(\frac{3n(r)}{8π}\right)^{\frac{1}{3}}
 ```
 where parameter ``\alpha = 2/3``. Density of the correlation energy of the homogeneous electron gas
 has not analytic formula, but can be interpolated. For example, one of the most simple expressions
@@ -511,18 +517,9 @@ is [Chachiyo correlation functional.](https://doi.org/10.1063/1.4958669)
 ```
 where ``r_s`` is Wigner-Seitz parameter, related to the density as
 ```math
-\frac{4}{3}\pi r_s^3 = \frac{1}{\rho}
+\frac{4}{3}\pi r_s^3 = \frac{1}{n}
 ```
-and ``a``, ``b`` are fitting parameters.
-
-The exchange-correlation potential corresponding to the exchange-correlation energy 
-for a local density approximation is given by
-
-```math
-V_{xc}(r) = \frac{\delta E^{LDA}}{\delta n({\bf r})} = \epsilon_{xc}(n({\bf r})) + n({\bf r})\frac{\partial \epsilon_{xc}(n({\bf r}))}{\partial n({\bf r})}
-```
-
-Therefore, in LDA it is simple ``\epsilon_x = \frac{3}{4} V_x``
+and ``a``, ``b`` are fitting parameters. For the LDA ``\epsilon_x = \frac{3}{4} V_x``.
 
 At present, the following LDA functionals are implemented.
 
@@ -533,3 +530,34 @@ LDA_C_VWN
 ```
 
 ### Self-consistent field
+
+Due to dependence of the potential ``V(r)`` to the solution ``n(r)``, 
+Kohn-Sham equations have to be solved iteratively, until self-consistence 
+is to be achieved. To facilitate convergence, simple mixing scheme is used.
+```math
+n_{i+1}(r) = (1 - \beta) n_{i}(r) + \beta n_{i+1}
+```
+```julia
+# admix density from previous iteration to converge SCF
+ρ_in = (1.0 - β) * ρ_in + β * ρ_out
+```
+SCF is converged if there are no more charge oscillations and energy doesn't change.
+```julia
+Δρ = 4π * ∫(dx, abs.(ρ_out - ρ_in) .* r²)
+@info @sprintf "%3i\t%14.6f\t%12.6f\n" i Etot Δρ
+
+# density converged if there are no more charge oscillations
+Δρ < δn && abs(Etot - E_prev) < δE && break
+```
+where `δn` and `δE` - charge and energy convergence criteria. 
+
+As an initial estimate of ``n(r)`` for the first SCF cycle, [Thomas-Fermi density](https://en.wikipedia.org/wiki/Thomas-Fermi_model) for neutral atom with nuclear charge ``Z`` is provided.
+
+```@docs
+TF
+```
+
+### Usage examples
+```@docs
+lda
+```
