@@ -23,7 +23,8 @@ export radial_shr_eq
 ```julia
 function lda(Z, x = -30.0:0.1:20.0; conf = atomic_electron_configuration[Z],
              xc! = SVWN!, Vex = r -> -Z / r,
-             ρ_in = nothing, β = 0.3, δn = 1.0e-6, δE = 5.0e-7, maxit = 100,
+             ρᵢₙ = TF.(exp.(x), Nₑ(conf)) .* exp.(x), 
+             β = 0.3, δn = 1.0e-6, δE = 5.0e-7, maxit = 100,
              μ = 1, α = 1e5)
 ```
 Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using
