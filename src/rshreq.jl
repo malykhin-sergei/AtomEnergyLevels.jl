@@ -65,18 +65,18 @@ function _radial_shr_eq(x, V, conf, μ, α)
   
   H = -1/2μ*laplacian(n, dx) + Diagonal(V .* r²)
 
-  E = 0.0; ρ = zeros(n); ψ = Dict()
+  ∑nᵢεᵢ = 0.0; ρ = zeros(n); ψ = Dict()
   
   for (l, subshell) in enumerate(conf)
     Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
     θ, y = eigen!(Hl, Hl + Diagonal(α * r²))
     ε = α*θ ./ (1 .- θ)
-    for (nᵣ, occ) in enumerate(subshell)
+    for (nᵣ, nᵢ) in enumerate(subshell)
       y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
-      ρ .+= occ / 4π * y[:, nᵣ] .^ 2
-      E += occ * ε[nᵣ]
-      ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = occ, ψᵢ = y[:, nᵣ])
+      ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
+      ∑nᵢεᵢ += nᵢ * ε[nᵣ]
+      ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
     end
   end
-  return (energy = E, density = ρ, orbitals = ψ)
+  return (energy = ∑nᵢεᵢ, density = ρ, orbitals = ψ)
 end

@@ -122,6 +122,7 @@ function lda(Z,
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
+    # TODO: LinearAlgebra.LAPACK.getrf! -> LinearAlgebra.LAPACK.getrs!
     vh = L \ (-4π * ρᵢₙ .* sqr .* r)
     # Apply boundary conditions at r → 0 and r → ∞
     vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
@@ -141,17 +142,17 @@ function lda(Z,
     # and bands energy ∑ε
     H = -1/2μ*Δ + Diagonal(V .* r²)
 
-    ∑ε = 0.0; ρₒᵤₜ .= 0.0
+    ∑nᵢεᵢ = 0.0; ρₒᵤₜ .= 0.0
 
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
       Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
       θ, y = eigen!(Hl, Hl + α*Diagonal(r²))
       ε = α*θ ./ (1 .- θ)
-      for (nᵣ, occ) in enumerate(subshell)
+      for (nᵣ, nᵢ) in enumerate(subshell)
         y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
-        ρₒᵤₜ .+= occ / 4π * y[:, nᵣ] .^ 2
-        ∑ε += occ * ε[nᵣ]
+        ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
+        ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       end
     end
 
@@ -159,7 +160,7 @@ function lda(Z,
 
     # DFT total energy:
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy)
-    Eₜₒₜ = ∑ε + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
+    Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 
     Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ - ρᵢₙ) .* r²)
     @info @sprintf "%3i\t%14.6f\t%12.6f\n" i Eₜₒₜ Δρ
