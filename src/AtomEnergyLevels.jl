@@ -8,7 +8,7 @@ include("dft_xc_functionals.jl")
 include("rshreq.jl")
 include("TF.jl")
 
-import LinearAlgebra: eigen!, diagind, Diagonal
+import LinearAlgebra: eigen!, diagind, Diagonal, Symmetric
 import Printf: @sprintf
 
 export laplacian, radial_shr_eq, TF, lda
@@ -122,8 +122,8 @@ function lda(Z,
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
-    # TODO: LinearAlgebra.LAPACK.getrf! -> LinearAlgebra.LAPACK.getrs!
     vh = L \ (-4π * ρᵢₙ .* sqr .* r)
+
     # Apply boundary conditions at r → 0 and r → ∞
     vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
            (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
@@ -139,7 +139,7 @@ function lda(Z,
     V = vp + vh + vxc
 
     # Solve the Schrödinger equation to find new density
-    # and bands energy ∑ε
+    # and bands energy ∑nᵢεᵢ
     H = -1/2μ*Δ + Diagonal(V .* r²)
 
     ∑nᵢεᵢ = 0.0; ρₒᵤₜ .= 0.0
@@ -147,7 +147,7 @@ function lda(Z,
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
       Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
-      θ, y = eigen!(Hl, Hl + α*Diagonal(r²))
+      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + α*Diagonal(r²)))
       ε = α*θ ./ (1 .- θ)
       for (nᵣ, nᵢ) in enumerate(subshell)
         y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
