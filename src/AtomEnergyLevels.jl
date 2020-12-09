@@ -14,7 +14,7 @@ import Printf: @sprintf
 export laplacian, radial_shr_eq, TF, lda
 export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
 export SVWN!, Xα!
-export conf_enc
+export conf_enc, Nₑ
 export atomic_shell, atomic_electron_configuration
 export laplacian
 export radial_shr_eq
@@ -95,16 +95,13 @@ function lda(Z,
           conf = atomic_electron_configuration[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
-          ρ_in = nothing,
+           ρᵢₙ = TF.(exp.(x), Nₑ(conf)) .* exp.(x),
              β = 0.3,
             δn = 1.0e-6,
             δE = 5.0e-7,
          maxit = 100,
              μ = 1,
              α = 1e5)
-
-  # total number of electrons: TODO
-  Q = sum(Iterators.flatten(conf)) 
 
   # radial grid
   r, n, dx = exp.(x), length(x), step(x)
@@ -113,24 +110,19 @@ function lda(Z,
   @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
   vp = Vex.(r)
-  # ρᵢₙ ρₒᵤₜ TODO
-  if isnothing(ρ_in)
-    ρ_in = TF.(r, Q) .* r
-    @info "Using Thomas-Fermi starting electron density"
-  end
 
-  Δ = laplacian(n, dx)
+  Δ = laplacian(x)
   L = Δ - Diagonal(fill(1/4, n))
 
-  Etot = 0.0; Δρ = 0.0
-  ρ_out, V, vh, vxc, εxc = [Array{Float64,1}(undef, n) for _ = 1:5]
+  Eₜₒₜ = 0.0; Δρ = 0.0; Q = Nₑ(conf)
+  ρₒᵤₜ, V, vh, vxc, εxc = [Array{Float64,1}(undef, n) for _ = 1:5]
 
   @info @sprintf("Starting SCF procedure with density mixing parameter β = %5.4f
       and convergence threshold |Δρ| ≤ %e", β, δn)
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
-    vh = L \ (-4π * ρ_in .* sqr .* r)
+    vh = L \ (-4π * ρᵢₙ .* sqr .* r)
     # Apply boundary conditions at r → 0 and r → ∞
     vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
            (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
@@ -139,17 +131,17 @@ function lda(Z,
 
     # Calculate exchange-correlation potential and energy density
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#the-xc-term)
-    xc!(ρ_in ./ r, vxc, εxc)
+    xc!(ρᵢₙ ./ r, vxc, εxc)
 
     # Assemble Kohn-Sham potential
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#kohn-sham-equations)
     V = vp + vh + vxc
 
-    # Solve the Schrödinger equation to find new density - ρ_out
+    # Solve the Schrödinger equation to find new density
     # and bands energy ∑ε
     H = -1/2μ*Δ + Diagonal(V .* r²)
 
-    ∑ε = 0.0; ρ_out .= 0.0
+    ∑ε = 0.0; ρₒᵤₜ .= 0.0
 
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
@@ -158,25 +150,25 @@ function lda(Z,
       ε = α*θ ./ (1 .- θ)
       for (nᵣ, occ) in enumerate(subshell)
         y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
-        ρ_out .+= occ / 4π * y[:, nᵣ] .^ 2
+        ρₒᵤₜ .+= occ / 4π * y[:, nᵣ] .^ 2
         ∑ε += occ * ε[nᵣ]
       end
     end
 
-    E_prev = Etot
+    E = Eₜₒₜ
 
     # DFT total energy:
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy)
-    Etot = ∑ε + 4π * ∫(dx, ρ_out .* (-1/2 * vh .- vxc .+ εxc) .* r²)
+    Eₜₒₜ = ∑ε + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 
-    Δρ = 4π * ∫(dx, abs.(ρ_out - ρ_in) .* r²)
-    @info @sprintf "%3i\t%14.6f\t%12.6f\n" i Etot Δρ
+    Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ - ρᵢₙ) .* r²)
+    @info @sprintf "%3i\t%14.6f\t%12.6f\n" i Eₜₒₜ Δρ
 
     # density converged if there are no more charge oscillations
-    Δρ < δn && abs(Etot - E_prev) < δE && break
+    Δρ < δn && abs(Eₜₒₜ - E) < δE && break
 
     # admix density from previous iteration to converge SCF
-    ρ_in = (1.0 - β) * ρ_in + β * ρ_out
+    ρᵢₙ = (1.0 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
@@ -184,7 +176,7 @@ function lda(Z,
   ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ)
   
   # remove numerical noise
-  ρ = [ifelse(x > eps(), x, 0.0) for x in ρ]
+  map!(x -> ifelse(x > eps(), x, 0.0), ρ, ρ)
 
   # total energy components
   Ek  = ∑ε - 4π * ∫(dx, ρ .* V .* r²)

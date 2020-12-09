@@ -65,13 +65,13 @@ function LDA_C_VWN(ρ; a = 0.0310907, b = 3.72744, c = 12.9352, x0 = -0.10498)
 end
 
 function SVWN!(ρ, vxc, εxc)
-  @simd for i=1:length(ρ) 
+  @simd for i in eachindex(ρ)
     @inbounds vxc[i], εxc[i] = LDA_X(ρ[i]) .+ LDA_C_VWN(ρ[i]) 
   end
 end
 
 function Xα!(ρ, vxc, εxc; α = 0.7)
-  @simd for i=1:length(ρ) 
+  @simd for i in eachindex(ρ)
     @inbounds vxc[i], εxc[i] = LDA_X(ρ[i], α = α) 
   end
 end

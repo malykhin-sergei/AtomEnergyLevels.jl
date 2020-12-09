@@ -109,6 +109,9 @@ function conf_enc(input::AbstractString;
     end        
     return tuple(configuration...)
 end
+
+Nₑ(conf) = sum(Iterators.flatten(conf))
+
 #=
 function conf_decode(conf)
     ls = ('s', 'p', 'd', 'f')
