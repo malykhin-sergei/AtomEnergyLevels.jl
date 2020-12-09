@@ -64,6 +64,18 @@ function LDA_C_VWN(ρ; a = 0.0310907, b = 3.72744, c = 12.9352, x0 = -0.10498)
   return vc, ϵc
 end
 
+function SVWN!(ρ, vxc, εxc)
+  @simd for i=1:length(ρ) 
+    @inbounds vxc[i], εxc[i] = LDA_X(ρ[i]) .+ LDA_C_VWN(ρ[i]) 
+  end
+end
+
+function Xα!(ρ, vxc, εxc; α = 0.7)
+  @simd for i=1:length(ρ) 
+    @inbounds vxc[i], εxc[i] = LDA_X(ρ[i], α = α) 
+  end
+end
+
 # TODO:
 # V. V. Karasiev, J. Chem. Phys. 145, 157101 (2016) (doi: 10.1063/1.4964758)
 # LDA_C_KARASIEV_MOD(ρ) = LDA_C_CHACHIYO(ρ, b₁ = 21.7392245)

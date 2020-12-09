@@ -13,6 +13,7 @@ import Printf: @sprintf
 
 export laplacian, radial_shr_eq, TF, lda
 export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
+export SVWN!, Xα!
 export conf_enc
 export atomic_shell, atomic_electron_configuration
 export laplacian
@@ -21,7 +22,7 @@ export radial_shr_eq
 """
 ```julia
 function lda(Z, x = -30.0:0.1:20.0; conf = atomic_electron_configuration[Z],
-             xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ), Vex = r -> -Z / r,
+             xc! = SVWN!, Vex = r -> -Z / r,
              ρ_in = nothing, β = 0.3, δn = 1.0e-6, δE = 5.0e-7, maxit = 100,
              μ = 1, α = 1e5)
 ```
@@ -92,7 +93,7 @@ JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
 function lda(Z,
              x = -30.0:0.1:20.0;             
           conf = atomic_electron_configuration[Z],
-            xc = ρ -> LDA_X(ρ) .+ LDA_C_VWN(ρ),
+           xc! = SVWN!,
            Vex = r -> -Z / r,
           ρ_in = nothing,
              β = 0.3,
@@ -102,7 +103,7 @@ function lda(Z,
              μ = 1,
              α = 1e5)
 
-  # total number of electrons
+  # total number of electrons: TODO
   Q = sum(Iterators.flatten(conf)) 
 
   # radial grid
@@ -112,7 +113,7 @@ function lda(Z,
   @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
   vp = Vex.(r)
-
+  # ρᵢₙ ρₒᵤₜ TODO
   if isnothing(ρ_in)
     ρ_in = TF.(r, Q) .* r
     @info "Using Thomas-Fermi starting electron density"
@@ -138,9 +139,7 @@ function lda(Z,
 
     # Calculate exchange-correlation potential and energy density
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#the-xc-term)
-    @simd for i=1:n 
-      @inbounds vxc[i], εxc[i] = xc(ρ_in[i] / r[i]) 
-    end
+    xc!(ρ_in ./ r, vxc, εxc)
 
     # Assemble Kohn-Sham potential
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#kohn-sham-equations)
