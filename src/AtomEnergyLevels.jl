@@ -37,7 +37,7 @@ On input:
 * `conf`  - electronic configuration
 * `xc`    - LDA exchange-correlation functional
 * `Vex`   - external potential
-* `ρ_in`  - input density (if nothing provided, Thomas-Fermi density is used)
+* `ρᵢₙ`   - input density (if nothing provided, Thomas-Fermi density is used)
 * `β`     - density mixing parameter, ρₙ = (1 - β) × ρₙ₋₁ + β × ρₙ
 * `δn`    - density convergence criterion
 * `δE`    - energy convergence criterion
