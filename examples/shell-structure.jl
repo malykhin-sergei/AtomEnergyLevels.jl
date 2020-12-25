@@ -1,5 +1,5 @@
 using AtomEnergyLevels
-using SpecialFunctions, PyPlot
+using PyPlot
 pygui(true)
 
 b = 1/2 * (3π/4)^(2/3)
