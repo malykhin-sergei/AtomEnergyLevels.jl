@@ -416,7 +416,7 @@ V_{xc} = \frac{dn\epsilon_{xc}}{dn}
 ```
 
 ```julia
-Etot = ∑ε + 4π * ∫(dx, ρ_out .* (-1/2 * vh .- vxc .+ εxc) .* r²)
+Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 ```
 
 !!! note
@@ -480,13 +480,13 @@ v_H(x_{max}) \approx Q/\sqrt{r_{max}}
 ```
 Here is how it coded.
 ```julia
-# Solve the Poisson equation to obtain Hartree potential
-vh = L \ (-4π * ρ_in .* sqr .* r)
-# Apply boundary conditions at r → 0 and r → ∞
-vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
-       (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
-# Change variable vh(x) → vh(r)
-vh ./= sqr
+    # Solve the Poisson equation to obtain Hartree potential
+    vh = L \ (-4π * ρᵢₙ .* sqr .* r)
+    # Apply boundary conditions at r → 0 and r → ∞
+    vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
+           (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
+    # Change variable vh(x) → vh(r)
+    vh ./= sqr
 ```
 
 ### Exchange-correlation potential
@@ -539,15 +539,15 @@ n_{i+1}(r) = (1 - \beta) n_{i}(r) + \beta n_{i+1}
 ```
 ```julia
 # admix density from previous iteration to converge SCF
-ρ_in = (1.0 - β) * ρ_in + β * ρ_out
+ρᵢₙ = (1.0 - β) * ρᵢₙ + β * ρₒᵤₜ
 ```
 SCF is converged if there are no more charge oscillations and energy doesn't change.
 ```julia
-Δρ = 4π * ∫(dx, abs.(ρ_out - ρ_in) .* r²)
-@info @sprintf "%3i\t%14.6f\t%12.6f\n" i Etot Δρ
+Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ - ρᵢₙ) .* r²)
+@info @sprintf "%3i\t%14.6f\t%12.6f\n" i Eₜₒₜ Δρ
 
 # density converged if there are no more charge oscillations
-Δρ < δn && abs(Etot - E_prev) < δE && break
+Δρ < δn && abs(Eₜₒₜ - E) < δE && break
 ```
 where `δn` and `δE` - charge and energy convergence criteria. 
 
