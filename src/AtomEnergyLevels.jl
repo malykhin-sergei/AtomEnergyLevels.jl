@@ -22,10 +22,7 @@ export radial_shr_eq
 """
 ```julia
 function lda(Z, x = -30.0:0.1:20.0; conf = atomic_electron_configuration[Z],
-             xc! = SVWN!, Vex = r -> -Z / r,
-             ρᵢₙ = TF.(exp.(x), Nₑ(conf)) .* exp.(x), 
-             β = 0.3, δn = 1.0e-6, δE = 5.0e-7, maxit = 100,
-             μ = 1, α = 1e5)
+             xc! = SVWN!, Vex = r -> -Z / r, δn = 1e-7, maxit = 100, μ = 1)
 ```
 Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using
 [local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-density_approximation)
@@ -37,39 +34,32 @@ On input:
 * `conf`  - electronic configuration
 * `xc`    - LDA exchange-correlation functional
 * `Vex`   - external potential
-* `ρᵢₙ`   - input density (if nothing provided, Thomas-Fermi density is used)
-* `β`     - density mixing parameter, ρₙ = (1 - β) × ρₙ₋₁ + β × ρₙ
 * `δn`    - density convergence criterion
-* `δE`    - energy convergence criterion
 * `maxit` - maximum permissible number of SCF iterations
 
 On output:
 
 *  `lda(...).energy.total` - total energy, a.u.
 *  `lda(...).density`  - electron density ρ(x) = 1/4π * ∑nᵢ*ψᵢ²(x)
-*  `lda(...).orbitals` - matrix, containing complete set of orbitals ψᵢ(x), corresponding eigenvalues εᵢ (energy levels), azimuthal and radial quantum numbers l, nᵣ, and level populations nᵢ (as listed in `conf`).
+*  `lda(...).orbitals` - orbitals ψᵢ(x), energy levels εᵢ, azimuthal and radial quantum numbers l, nᵣ, and populations nᵢ (as listed in `conf`).
 
 # Example
 [Hooke atom](https://en.wikipedia.org/wiki/Hooke's_atom)
 
 ```julia-repl
-julia> lda(2, Vex = r -> 1/8 * r^2, β = 0.8).energy.total;
+julia> lda(2, Vex = r -> 1/8 * r^2).energy.total;
 [ Info: Using logarithmic 501 point grid with step dx = 0.1000
-[ Info: Using Thomas-Fermi starting electron density
-┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
 [ Info: cycle           energy          |Δρ|
 [ Info:   0           2.103849      1.895566
 [ Info:   1           2.013080      0.357780
-[ Info:   2           2.022087      0.073897
-[ Info:   3           2.025397      0.014779
-[ Info:   4           2.026076      0.003000
-[ Info:   5           2.026201      0.000621
-[ Info:   6           2.026224      0.000130
-[ Info:   7           2.026228      0.000028
-[ Info:   8           2.026229      0.000006
-[ Info:   9           2.026229      0.000001
-[ Info:  10           2.026229      0.000000
+[ Info:   2           2.023521      0.039644
+[ Info:   3           2.026081      0.003607
+[ Info:   4           2.026212      0.000404
+[ Info:   5           2.026228      0.000045
+[ Info:   6           2.026229      0.000005
+[ Info:   7           2.026229      0.000001
+[ Info:   8           2.026229      0.000000
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               0.627459
 │       ELECTRON-ELECTRON              1.022579
@@ -77,18 +67,6 @@ julia> lda(2, Vex = r -> 1/8 * r^2, β = 0.8).energy.total;
 │       ELECTRON-NUCLEAR               0.899965
 │       TOTAL ENERGY                   2.026229
 └       VIRIAL RATIO                  -2.229260
-
-```
-Compare with exact Kohn-Sham values from Table II of S. Kais et al
-// Density functionals and dimensional renormalization for an exactly solvable model,
-JCP 99, 417 (1993); `http://dx.doi.org/10.1063/1.465765`
-```
-        ELECTRON KINETIC               0.6352
-        ELECTRON-ELECTRON              1.0320
-        EXCHANGE-CORRELATION          -0.5553
-        ELECTRON-NUCLEAR               0.8881
-        TOTAL ENERGY                   2.0000
-        VIRIAL RATIO                  -2.1486
 ```
 """
 function lda(Z,
@@ -96,13 +74,11 @@ function lda(Z,
           conf = atomic_electron_configuration[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
-           ρᵢₙ = TF.(exp.(x), Nₑ(conf)) .* exp.(x),
-             β = 0.3,
-            δn = 1.0e-6,
-            δE = 5.0e-7,
+            δn = 1e-7,
          maxit = 100,
-             μ = 1,
-             α = 1e5)
+             μ = 1)
+  # 
+  β = 0.8; α = 1e5
 
   # radial grid
   r, n, dx = exp.(x), length(x), step(x)
@@ -110,16 +86,18 @@ function lda(Z,
 
   @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
 
+  Q = Nₑ(conf)
+  ρᵢₙ = TF.(r, Q) .* r
   vp = Vex.(r)
 
   Δ = laplacian(x)
   L = Δ - Diagonal(fill(1/4, n))
 
-  Eₜₒₜ = 0.0; Δρ = 0.0; Q = Nₑ(conf)
-  ρₒᵤₜ, V, vh, vxc, εxc = [similar(ρᵢₙ) for _ = 1:5]
+  Eₜₒₜ = 0.0; Δρ = 0.0; 
+  
+  ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, V, vh, vxc, εxc = [similar(ρᵢₙ) for _ = 1:7]
 
-  @info @sprintf("Starting SCF procedure with density mixing parameter β = %5.4f
-      and convergence threshold |Δρ| ≤ %e", β, δn)
+  @info @sprintf("Starting SCF procedure with convergence threshold |Δρ| ≤ %e", δn)
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
@@ -164,13 +142,21 @@ function lda(Z,
     Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 
     Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ - ρᵢₙ) .* r²)
-    @info @sprintf "%3i\t%14.6f\t%12.6f\n" i Eₜₒₜ Δρ
+    @info @sprintf "%3i\t%14.6f\t%12.6f" i Eₜₒₜ Δρ
 
     # density converged if there are no more charge oscillations
-    Δρ < δn && abs(Eₜₒₜ - E) < δE && break
+    Δρ < δn && break
+
+    if i > 0
+      dρₒᵤₜ = ∫(dx, (ρₒᵤₜ - prev_ρₒᵤₜ) .* r) / ∫(dx, (ρᵢₙ - prev_ρᵢₙ) .* r)
+      β = min(max(1/(1 - dρₒᵤₜ), 0.1), 0.9)
+    end
+
+    prev_ρᵢₙ  .= ρᵢₙ
+    prev_ρₒᵤₜ .= ρₒᵤₜ
 
     # admix density from previous iteration to converge SCF
-    ρᵢₙ = (1.0 - β) * ρᵢₙ + β * ρₒᵤₜ
+    ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 

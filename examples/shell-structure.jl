@@ -6,7 +6,7 @@ b = 1/2 * (3π/4)^(2/3)
 
 x = -30.0:0.1:20.0; r  = exp.(x);
 
-Z = 92; ρ = lda(Z, β = 0.5).density;
+Z = 92; ρ = lda(Z).density;
 
 begin
     title("Radial electronic density of the U and Thomas-Fermi atoms")

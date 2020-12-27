@@ -105,54 +105,71 @@ Find the total energy and density of the [Hooke's atom](https://en.wikipedia.org
 
 ```julia
 using AtomEnergyLevels
-
-xgrid = -30.0:0.1:2.0;
-
-result = lda(2, xgrid, conf = 2, Vex = r -> 1/8 * r^2, β = 0.8);
-
 using SpecialFunctions, PyPlot
 pygui(true);
+
+x = -30.0:0.1:20.0;
+r  = exp.(x);
 
 # exact density of the ground state, see
 # S. Kais et al // Density functionals and dimensional 
 # renormalization for an exactly solvable model, JCP 99, 417 (1993); 
 # http://dx.doi.org/10.1063/1.465765
 
-r  = exp.(xgrid);
 N² = 1 / (π^(3/2) * (8 + 5 * sqrt(π)));
-ρₑ = @. 2N² * exp(-1/2 * r^2) * (sqrt(π/2) * (7/4 + 1/4 * r^2
-                   + (r + 1/r) * erf(r/sqrt(2))) + exp(-1/2 * r^2));
+ρₑ = @. 2N² * exp(-1/2 * r^2) * (sqrt(π/2) * (7/4 + 1/4 * r^2 + (r + 1/r) * erf(r/sqrt(2))) + exp(-1/2 * r^2));
 
-plot(r, ρₑ, label = "exact"); 
-plot(r, result.density ./ r, label = "LDA");
+xalpha = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2, xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = 0.798));
+svwn5  = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2);
+
+begin
+    title("Hooke's atom density")
+    xlabel(L"\frac{r Z^{1/3}}{b},\,a.u.")
+    ylabel(L"\rho Z^{-\frac{4}{3}}")
+    
+    ax1 = PyPlot.axes()
+    ax1.set_xlim([0,5])
+
+    plot(r, ρₑ, label = "Exact")
+    plot(r, xalpha.density ./ r, label = "Xα, α=0.798")
+    plot(r, svwn5.density ./ r, label = "LDA")
+
+    legend(loc = "upper right", fancybox = "true")
+    grid("on")
+end
 ```
-Output:
+LDA results output:
 ```
-[ Info: Using logarithmic 321 point grid with step dx = 0.1000
-[ Info: Using Thomas-Fermi starting electron density
-┌ Info: Starting SCF procedure with density mixing parameter β = 0.8000
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+[ Info: Using logarithmic 501 point grid with step dx = 0.1000
+[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
 [ Info: cycle           energy          |Δρ|
-[ Info:   0           2.108255      1.786059
-[ Info:   1           2.014267      0.335879
-[ Info:   2           2.022630      0.069517
-[ Info:   3           2.025812      0.013903
-[ Info:   4           2.026465      0.002825
-[ Info:   5           2.026584      0.000586
-[ Info:   6           2.026606      0.000123
-[ Info:   7           2.026611      0.000026
-[ Info:   8           2.026611      0.000006
-[ Info:   9           2.026612      0.000001
-[ Info:  10           2.026612      0.000000
+[ Info:   0           2.103849      1.895566
+[ Info:   1           2.013080      0.357780
+[ Info:   2           2.023521      0.039644
+[ Info:   3           2.026081      0.003607
+[ Info:   4           2.026212      0.000404
+[ Info:   5           2.026228      0.000045
+[ Info:   6           2.026229      0.000005
+[ Info:   7           2.026229      0.000001
+[ Info:   8           2.026229      0.000000
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               0.627459
-│       ELECTRON-ELECTRON              1.022961
+│       ELECTRON-ELECTRON              1.022579
 │       EXCHANGE-CORRELATION          -0.523773
 │       ELECTRON-NUCLEAR               0.899965
-│       TOTAL ENERGY                   2.026612
-└       VIRIAL RATIO                  -2.229869
+│       TOTAL ENERGY                   2.026229
+└       VIRIAL RATIO                  -2.229260
 ```
-![Comparison of the exact Hooke's atom density with LDA numerical result](./hooke_atom_density.png)
+Compare with exact Kohn-Sham values from Table II of S. Kais et al
+```
+        ELECTRON KINETIC               0.6352
+        ELECTRON-ELECTRON              1.0320
+        EXCHANGE-CORRELATION          -0.5553
+        ELECTRON-NUCLEAR               0.8881
+        TOTAL ENERGY                   2.0000
+        VIRIAL RATIO                  -2.1486
+```
+![Comparison of the exact Hooke's atom density with LDA numerical result](./examples/hooke_atom.png)
 
 ### Uranium atom
 
@@ -160,80 +177,76 @@ Compare with NIST [Atomic Reference Data for Electronic Structure
 Calculations, Uranium](https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-90)
 
 ```julia
-using AtomEnergyLevels, Printf
+using AtomEnergyLevels
+using PyPlot
+pygui(true)
 
-function uranium()
-  ψ = lda(92, β = 0.5).orbitals;
-  for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
-    nᵣ, l = quantum_numbers
-    nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
-    n = nᵣ + l + 1
-    @printf("\t%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l], nᵢ, ϵᵢ)
-  end
+b = 1/2 * (3π/4)^(2/3)
+
+x = -30.0:0.1:20.0; r  = exp.(x);
+
+Z = 92; ρ = lda(Z).density;
+
+begin
+    title("Radial electronic density of the U and Thomas-Fermi atoms")
+    xlabel(L"\frac{r Z^{1/3}}{b},\,a.u.")
+    ylabel(L"\rho Z^{-\frac{4}{3}}")
+
+    grid("on")
+
+    ax1 = PyPlot.axes()
+    ax1.set_xlim([0.0001,100])
+    PyPlot.xscale("log")
+    
+    plot(r/b, 4π * r .^ 2 .* TF.(r, 1), label = "TF")
+    plot(r/b * Z^(1/3), 4π * r .* ρ / Z^(4/3), label = "U (LDA)")
+    legend(loc = "upper right", fancybox = "true")
 end
-
-@time uranium()
 ```
 Output:
 ```
 [ Info: Using logarithmic 501 point grid with step dx = 0.1000
-[ Info: Using Thomas-Fermi starting electron density
-┌ Info: Starting SCF procedure with density mixing parameter β = 0.5000
-└       and convergence threshold |Δρ| ≤ 1.000000e-06
+[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
 [ Info: cycle           energy          |Δρ|
 [ Info:   0      -25892.940688     13.946827
-[ Info:   1      -25648.785452      6.210687
-[ Info:   2      -25663.151615      2.715824
-[ Info:   3      -25658.522677      1.331700
-[ Info:   4      -25658.683795      0.663356
-[ Info:   5      -25658.531924      0.330864
-[ Info:   6      -25658.485432      0.165669
-[ Info:   7      -25658.455013      0.083251
-[ Info:   8      -25658.438247      0.041877
-[ Info:   9      -25658.428850      0.021078
-[ Info:  10      -25658.423720      0.010617
-[ Info:  11      -25658.420960      0.005357
-[ Info:  12      -25658.419493      0.002707
-[ Info:  13      -25658.418722      0.001369
-[ Info:  14      -25658.418319      0.000693
-[ Info:  15      -25658.418110      0.000351
-[ Info:  16      -25658.418003      0.000178
-[ Info:  17      -25658.417947      0.000090
-[ Info:  18      -25658.417918      0.000046
-[ Info:  19      -25658.417904      0.000023
-[ Info:  20      -25658.417896      0.000012
-[ Info:  21      -25658.417893      0.000006
-[ Info:  22      -25658.417891      0.000003
-[ Info:  23      -25658.417890      0.000002
-[ Info:  24      -25658.417889      0.000001
-[ Info:  25      -25658.417889      0.000000
+[ Info:   1      -25392.907465      9.142395
+[ Info:   2      -25839.860895      7.440384
+[ Info:   3      -25734.593283      3.920120
+[ Info:   4      -25654.245863      1.816286
+[ Info:   5      -25662.380950      0.745344
+[ Info:   6      -25661.726995      0.682063
+[ Info:   7      -25657.713231      0.260715
+[ Info:   8      -25659.149922      0.072949
+[ Info:   9      -25658.990090      0.064592
+[ Info:  10      -25658.353079      0.033047
+[ Info:  11      -25658.437031      0.016313
+[ Info:  12      -25658.433437      0.014779
+[ Info:  13      -25658.411140      0.003996
+[ Info:  14      -25658.423601      0.000965
+[ Info:  15      -25658.422312      0.000868
+[ Info:  16      -25658.417277      0.000458
+[ Info:  17      -25658.417935      0.000233
+[ Info:  18      -25658.417919      0.000211
+[ Info:  19      -25658.417827      0.000056
+[ Info:  20      -25658.417919      0.000013
+[ Info:  21      -25658.417912      0.000012
+[ Info:  22      -25658.417883      0.000007
+[ Info:  23      -25658.417887      0.000003
+[ Info:  24      -25658.417887      0.000003
+[ Info:  25      -25658.417888      0.000001
+[ Info:  26      -25658.417889      0.000000
+[ Info:  27      -25658.417889      0.000000
+[ Info:  28      -25658.417888      0.000000
+[ Info:  29      -25658.417889      0.000000
 ┌ Info: RESULTS SUMMARY:
-│       ELECTRON KINETIC           25651.231180
+│       ELECTRON KINETIC           25651.231179
 │       ELECTRON-ELECTRON           9991.594177
 │       EXCHANGE-CORRELATION        -425.032628
-│       ELECTRON-NUCLEAR          -60876.210618
+│       ELECTRON-NUCLEAR          -60876.210617
 │       TOTAL ENERGY              -25658.417889
 └       VIRIAL RATIO                   2.000280
-        1S      ( 2.0)    -3689.355140
-        2S      ( 2.0)     -639.778728
-        2P      ( 6.0)     -619.108550
-        3S      ( 2.0)     -161.118073
-        3P      ( 6.0)     -150.978980
-        3D      (10.0)     -131.977358
-        4S      ( 2.0)      -40.528084
-        4P      ( 6.0)      -35.853321
-        4D      (10.0)      -27.123212
-        4F      (14.0)      -15.027460
-        5S      ( 2.0)       -8.824089
-        5P      ( 6.0)       -7.018092
-        5D      (10.0)       -3.866175
-        6S      ( 2.0)       -1.325976
-        6P      ( 6.0)       -0.822538
-        5F      ( 3.0)       -0.366543
-        6D      ( 1.0)       -0.143190
-        7S      ( 2.0)       -0.130948
-  4.133966 seconds (128.07 k allocations: 1.195 GiB, 1.10% gc time)
 ```
+![Radial electronic density of the U and Thomas-Fermi atoms](./examples/shell_structure.png)
 
 ## Author
 

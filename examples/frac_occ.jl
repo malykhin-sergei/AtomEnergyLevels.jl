@@ -5,7 +5,7 @@ pygui(true);
 function cobalt()
     E = []
     for q = 7:0.1:9
-        push!(E, lda(27, conf = conf_enc("[Ar] 3d$q 4s$(9 - q)"), β = 0.2).energy.total)
+        push!(E, lda(27, conf = conf_enc("[Ar] 3d$q 4s$(9 - q)")).energy.total)
     end
     return E
 end

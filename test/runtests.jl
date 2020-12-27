@@ -68,7 +68,7 @@ using Test, Printf
     @info "Here we reproduce exact Hooke atom energy with α = 0.83685294"
     Etot = lda(2, conf = 2, 
                xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = 0.83685294), 
-               Vex = r -> 1/8 * r^2, β = 0.8).energy.total
+               Vex = r -> 1/8 * r^2).energy.total
     @test Etot ≈ 2.0 atol = 1e-7
   end
 
@@ -76,7 +76,7 @@ using Test, Printf
     @info "Argon atom"
     @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
     @info "Etot = -525.946195 (NIST)"
-    E, ρ, ψ = lda(18, β=0.6)
+    E, ρ, ψ = lda(18)
     @info "Energy levels for the Ar atom are:"
     for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers
@@ -101,7 +101,7 @@ using Test, Printf
     @info "Ar+ [Ne] 3s2 3p5"
     @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
     @info "Etot = -525.351708  (NIST)"
-    E, ρ, ψ = lda(18, conf = conf_enc("[Ne] 3s2 3p5"), β=0.6)
+    E, ρ, ψ = lda(18, conf = conf_enc("[Ne] 3s2 3p5"))
     @info "Energy levels for Ar+ are:"
     for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers

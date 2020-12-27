@@ -12,7 +12,7 @@ function SLAPW92!(ρ, vxc, εxc)
 end
 
 function atom_ground_state(z, xcfun)
-    ψ = lda(z, xc! = xcfun, β = 0.5).orbitals
+    ψ = lda(z, xc! = xcfun).orbitals
     for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
