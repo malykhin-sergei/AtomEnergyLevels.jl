@@ -10,6 +10,7 @@ DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 

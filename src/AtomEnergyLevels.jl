@@ -116,7 +116,7 @@ function lda(Z,
   L = Δ - Diagonal(fill(1/4, n))
 
   Eₜₒₜ = 0.0; Δρ = 0.0; Q = Nₑ(conf)
-  ρₒᵤₜ, V, vh, vxc, εxc = [Array{Float64,1}(undef, n) for _ = 1:5]
+  ρₒᵤₜ, V, vh, vxc, εxc = [similar(ρᵢₙ) for _ = 1:5]
 
   @info @sprintf("Starting SCF procedure with density mixing parameter β = %5.4f
       and convergence threshold |Δρ| ≤ %e", β, δn)
