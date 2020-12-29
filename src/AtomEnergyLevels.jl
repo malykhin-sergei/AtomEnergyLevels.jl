@@ -77,14 +77,17 @@ function lda(Z,
             δn = 1e-8,
          maxit = 100,
              μ = 1)
-  # 
-  β = 0.8; α = 1e5
+
+  # constant
+  Α = 1e5
+  # initial value of the density mixing parameter
+  β = 0.8
 
   # radial grid
   r, n, dx = exp.(x), length(x), step(x)
   r², sqr = exp.(2x), exp.(x/2)
 
-  @info @sprintf("Using logarithmic %3i point grid with step dx = %5.4f", n, dx)
+  @info @sprintf("A grid of %3i points x = %5.4f:%5.4f:%5.4f is used", n, x[1], dx, x[end])
 
   Q = Nₑ(conf)
   ρᵢₙ = TF.(r, Q) .* r
@@ -102,22 +105,17 @@ function lda(Z,
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
     vh = L \ (-4π * ρᵢₙ .* sqr .* r)
-
+    # Apply boundary conditions at r → 0 and r → ∞
     c₁ = (sqr[1]*vh[1] - sqr[n]*vh[n] + Q*(1 - r[1])) / (r[n] - r[1])
     c₂ = -(r[n]*sqr[1]*vh[1] - sqr[n]*r[1]*vh[n] + Q*r[1]*(1 - r[n])) / (r[n] - r[1])
-
-    # Apply boundary conditions at r → 0 and r → ∞
     vh += c₁ * sqr + c₂ ./ sqr
-
     # Change variable vh(x) → vh(r)
     vh ./= sqr
 
-    # Calculate exchange-correlation potential and energy density
-    # (https://www.theoretical-physics.net/dev/quantum/dft.html#the-xc-term)
+    # Exchange-correlation potential and energy density
     xc!(ρᵢₙ ./ r, vxc, εxc)
 
-    # Assemble Kohn-Sham potential
-    # (https://www.theoretical-physics.net/dev/quantum/dft.html#kohn-sham-equations)
+    # Kohn-Sham potential
     V = vp + vh + vxc
 
     # Solve the Schrödinger equation to find new density
@@ -129,17 +127,15 @@ function lda(Z,
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
       Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
-      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + α*Diagonal(r²)))
-      ε = α*θ ./ (1 .- θ)
+      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + Α*Diagonal(r²)))
+      ε = Α*θ ./ (1 .- θ)
       for (nᵣ, nᵢ) in enumerate(subshell)
         y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
         ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
         ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       end
     end
-
     E = Eₜₒₜ
-
     # DFT total energy:
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy)
     Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
@@ -154,22 +150,20 @@ function lda(Z,
       dρₒᵤₜ = ∫(dx, (ρₒᵤₜ - prev_ρₒᵤₜ) .* r) / ∫(dx, (ρᵢₙ - prev_ρᵢₙ) .* r)
       β = min(max(1/(1 - dρₒᵤₜ), 0.1), 0.9)
     end
-
     prev_ρᵢₙ  .= ρᵢₙ
     prev_ρₒᵤₜ .= ρₒᵤₜ
-
     # admix density from previous iteration to converge SCF
     ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
-  # obtain orbitals
+  # get orbitals
   ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ)
   
   # remove numerical noise
-  map!(x -> ifelse(x > eps(), x, 0.0), ρ, ρ)
+  foreach(x -> ifelse(x > eps(), x, zero(x)), ρ)
 
-  # total energy components
+  # total energy components:
   Ek  = ∑ε - 4π * ∫(dx, ρ .* V .* r²)
   Eh  = 2π * ∫(dx, ρ .* vh .* r²)
   Exc = 4π * ∫(dx, ρ .* εxc .* r²)
