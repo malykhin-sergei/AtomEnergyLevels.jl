@@ -74,7 +74,7 @@ function lda(Z,
           conf = atomic_electron_configuration[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
-            δn = 1e-7,
+            δn = 1e-8,
          maxit = 100,
              μ = 1)
   # 
