@@ -30,7 +30,7 @@ function test_all(N = length(ENIST))
   for at_number=1:N
     element = keys(atomic_electron_configuration)[at_number]
     @info "Calculating $element:" 
-    results = lda(at_number)
+    results = lda(at_number, -35:0.1:20, δn = 1e-8)
     E[at_number] = results.energy.total
     @info @sprintf("Energy levels for the %s atom are:", element)
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)

@@ -70,7 +70,7 @@ julia> lda(2, Vex = r -> 1/8 * r^2).energy.total;
 ```
 """
 function lda(Z,
-             x = -30.0:0.1:20.0;             
+             x = -30:0.1:15;             
           conf = atomic_electron_configuration[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
@@ -103,9 +103,12 @@ function lda(Z,
     # Solve the Poisson equation to obtain Hartree potential
     vh = L \ (-4π * ρᵢₙ .* sqr .* r)
 
+    c₁ = (sqr[1]*vh[1] - sqr[n]*vh[n] + Q*(1 - r[1])) / (r[n] - r[1])
+    c₂ = -(r[n]*sqr[1]*vh[1] - sqr[n]*r[1]*vh[n] + Q*r[1]*(1 - r[n])) / (r[n] - r[1])
+
     # Apply boundary conditions at r → 0 and r → ∞
-    vh .-= (vh[n] - Q / sqr[n])/sqr[n] .* sqr .+
-           (vh[1] - Q * sqr[1])*sqr[1] ./ sqr
+    vh += c₁ * sqr + c₂ ./ sqr
+
     # Change variable vh(x) → vh(r)
     vh ./= sqr
 
