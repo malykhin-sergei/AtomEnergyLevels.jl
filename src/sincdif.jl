@@ -26,14 +26,13 @@ julia> isapprox(d²f_exact, d²f_approx, atol = 1e-10)
 true
 ```
 """
-laplacian(x::AbstractRange{T}) where {T} = _laplacian(length(x), step(x))
-laplacian(n::Int, h::Real) = _laplacian(n, h)
-
-function _laplacian(n, h)
-  Δ = Matrix{Float64}(undef, n, n)
+function laplacian(n, h)
+  Δ = zeros(n, n)
   Δ[diagind(Δ, 0)] .= -1/3*π^2 / h^2
   for i=2:n
-    @inbounds Δ[diagind(Δ, i-1)] = Δ[diagind(Δ, 1-i)] .= 2*(-1)^i / (i-1)^2 / h^2
+    @inbounds Δ[diagind(Δ, i-1)] = 
+      Δ[diagind(Δ, 1-i)] .= 2*(-1)^i / (i-1)^2 / h^2
   end
   return Δ
 end
+laplacian(x::AbstractRange) = laplacian(length(x), step(x))

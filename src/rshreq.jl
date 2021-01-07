@@ -48,17 +48,10 @@ julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3d1")).energy ≈ -1/18
 true
 ```
 """
-radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange{T} = -30.0:0.1:5.0;
-              conf = 1, μ = 1.0, α = 1e5) where {T} = 
-              _radial_shr_eq(x, V.(exp.(x)), conf, μ, α)
+function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, α = 1e5)
 
-radial_shr_eq(V::Array{S}, x::AbstractRange{T}; 
-              conf = 1, μ = 1.0, α = 1e5) where {S, T} = 
-              _radial_shr_eq(x, V, conf, μ, α)
-
-function _radial_shr_eq(x, V, conf, μ, α)
   if length(V) != length(x)
-    throw(DomainError(x, "Arrays V and r have different length"))
+    throw(DimensionMismatch("Arrays V and r have different length"))
   end
   
   r, r², n, dx = exp.(x), exp.(2x), length(x), step(x)
@@ -72,11 +65,13 @@ function _radial_shr_eq(x, V, conf, μ, α)
     θ, y = eigen!(Hl, Hl + Diagonal(α * r²))
     ε = α*θ ./ (1 .- θ)
     for (nᵣ, nᵢ) in enumerate(subshell)
-      y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
-      ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
+      @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+      @views ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
       ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
     end
   end
   return (energy = ∑nᵢεᵢ, density = ρ, orbitals = ψ)
 end
+radial_shr_eq(V::Function = r -> -1/r, x = -30.0:0.1:5.0; conf = 1, μ = 1, α = 1e5) = 
+              radial_shr_eq(V.(exp.(x)), x, conf = conf, μ = μ, α = α)

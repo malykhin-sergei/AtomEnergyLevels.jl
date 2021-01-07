@@ -46,27 +46,8 @@ On output:
 # Example
 [Hooke atom](https://en.wikipedia.org/wiki/Hooke's_atom)
 
-```julia-repl
-julia> lda(2, Vex = r -> 1/8 * r^2).energy.total;
-[ Info: Using logarithmic 501 point grid with step dx = 0.1000
-[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
-[ Info: cycle           energy          |Δρ|
-[ Info:   0           2.103849      1.895566
-[ Info:   1           2.013080      0.357780
-[ Info:   2           2.023521      0.039644
-[ Info:   3           2.026081      0.003607
-[ Info:   4           2.026212      0.000404
-[ Info:   5           2.026228      0.000045
-[ Info:   6           2.026229      0.000005
-[ Info:   7           2.026229      0.000001
-[ Info:   8           2.026229      0.000000
-┌ Info: RESULTS SUMMARY:
-│       ELECTRON KINETIC               0.627459
-│       ELECTRON-ELECTRON              1.022579
-│       EXCHANGE-CORRELATION          -0.523773
-│       ELECTRON-NUCLEAR               0.899965
-│       TOTAL ENERGY                   2.026229
-└       VIRIAL RATIO                  -2.229260
+```@example
+lda(2, Vex = r -> 1/8 * r^2).energy.total;
 ```
 """
 function lda(Z,
@@ -104,19 +85,19 @@ function lda(Z,
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
-    vh = L \ (-4π * ρᵢₙ .* sqr .* r)
+    vh .= L \ (-4π * ρᵢₙ .* sqr .* r)
     # Apply boundary conditions at r → 0 and r → ∞
     c₁ = (sqr[1]*vh[1] - sqr[n]*vh[n] + Q*(1 - r[1])) / (r[n] - r[1])
     c₂ = -(r[n]*sqr[1]*vh[1] - sqr[n]*r[1]*vh[n] + Q*r[1]*(1 - r[n])) / (r[n] - r[1])
-    vh += c₁ * sqr + c₂ ./ sqr
+    @. vh += c₁ * sqr + c₂ / sqr
     # Change variable vh(x) → vh(r)
-    vh ./= sqr
+    @. vh /= sqr
 
     # Exchange-correlation potential and energy density
     xc!(ρᵢₙ ./ r, vxc, εxc)
 
     # Kohn-Sham potential
-    V = vp + vh + vxc
+    @. V = vp + vh + vxc
 
     # Solve the Schrödinger equation to find new density
     # and bands energy ∑nᵢεᵢ
@@ -127,11 +108,11 @@ function lda(Z,
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
       Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
-      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + Α*Diagonal(r²)))
-      ε = Α*θ ./ (1 .- θ)
+      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + Α * Diagonal(r²)))
+      ε = Α * θ ./ (1 .- θ)
       for (nᵣ, nᵢ) in enumerate(subshell)
-        y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
-        ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
+        @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+        @views ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
         ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       end
     end
@@ -140,20 +121,20 @@ function lda(Z,
     # (https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy)
     Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 
-    Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ - ρᵢₙ) .* r²)
+    Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ .- ρᵢₙ) .* r²)
     @info @sprintf "%3i\t%14.6f\t%12.6f" i Eₜₒₜ Δρ
 
     # density converged if there are no more charge oscillations
     Δρ < δn && break
 
     if i > 0
-      dρₒᵤₜ = ∫(dx, (ρₒᵤₜ - prev_ρₒᵤₜ) .* r) / ∫(dx, (ρᵢₙ - prev_ρᵢₙ) .* r)
+      dρₒᵤₜ = ∫(dx, (ρₒᵤₜ .- prev_ρₒᵤₜ) .* r) / ∫(dx, (ρᵢₙ .- prev_ρᵢₙ) .* r)
       β = min(max(1/(1 - dρₒᵤₜ), 0.1), 0.9)
     end
-    prev_ρᵢₙ  .= ρᵢₙ
-    prev_ρₒᵤₜ .= ρₒᵤₜ
+    @. prev_ρᵢₙ  = ρᵢₙ
+    @. prev_ρₒᵤₜ = ρₒᵤₜ
     # admix density from previous iteration to converge SCF
-    ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
+    @. ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
