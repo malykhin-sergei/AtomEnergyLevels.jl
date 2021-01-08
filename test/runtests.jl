@@ -10,6 +10,10 @@ using Test, Printf
   end
 
   @testset "Parsing electronic configuration" begin
+    @test c"1s1"              == ((1.0,),)
+    @test c"[He] 2s1"         == ((2.0, 1.0),)
+    @test c"[He] 2s2 2p4"     == ((2.0, 2.0), (4.0,))
+    @test c"[Xe] 4f1 5d1 6s2" == ((2.0, 2.0, 2.0, 2.0, 2.0, 2.0), (6.0, 6.0, 6.0, 6.0), (10.0, 10.0, 1.0), (1.0,))
     @test_throws DomainError conf_enc("[Ge] 1s1")
     @test_throws DomainError conf_enc("[Rn]", maxn = 5)
     @test_throws DomainError conf_enc("[He] 2d1")
@@ -66,7 +70,7 @@ using Test, Printf
     @info "An exact solution for Hooke's atom is E = 2.0 a.u."
     @info "For the Xα method α is adjustable parameter."
     @info "Here we reproduce exact Hooke atom energy with α = 0.83685294"
-    Etot = lda(2, conf = 2, 
+    Etot = lda(2, conf = c"[He]", 
                xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = 0.83685294), 
                Vex = r -> 1/8 * r^2).energy.total
     @test Etot ≈ 2.0 atol = 1e-7
@@ -101,7 +105,7 @@ using Test, Printf
     @info "Ar+ [Ne] 3s2 3p5"
     @info "https://www.nist.gov/pml/atomic-reference-data-electronic-structure-calculations/atomic-reference-data-electronic-7-16"
     @info "Etot = -525.351708  (NIST)"
-    E, ρ, ψ = lda(18, conf = conf_enc("[Ne] 3s2 3p5"))
+    E, ρ, ψ = lda(18, conf = c"[Ne] 3s2 3p5")
     @info "Energy levels for Ar+ are:"
     for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers

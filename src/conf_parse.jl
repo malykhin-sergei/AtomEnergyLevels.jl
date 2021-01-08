@@ -112,6 +112,10 @@ end
 
 Nₑ(conf) = sum(Iterators.flatten(conf))
 
+macro c_str(config)
+    conf_enc(config)
+end
+
 #=
 function conf_decode(conf)
     ls = ('s', 'p', 'd', 'f')

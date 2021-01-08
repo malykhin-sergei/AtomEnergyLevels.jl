@@ -14,7 +14,7 @@ import Printf: @sprintf
 export laplacian, radial_shr_eq, TF, lda
 export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
 export SVWN!, Xα!
-export conf_enc, Nₑ
+export conf_enc, Nₑ, @c_str
 export atomic_shell, atomic_electron_configuration
 export laplacian
 export radial_shr_eq
