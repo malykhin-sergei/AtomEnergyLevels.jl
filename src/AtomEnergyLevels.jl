@@ -57,9 +57,9 @@ function lda(Z,
            Vex = r -> -Z / r,
             δn = 1e-8,
          maxit = 100,
-             μ = 1)
+             μ = 1,
+             Α = 1e5)
 
-  Α = 1e5
   β = 0.8  # initial value of the density mixing parameter
 
   # radial grid
