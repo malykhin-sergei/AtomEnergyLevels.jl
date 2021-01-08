@@ -25,16 +25,12 @@ const ENIST = [-0.445671;     -2.834836;     -7.335195;    -14.447209;    -24.34
 using AtomEnergyLevels
 using Test, Printf, Statistics
 
-# Median absolute deviation
-MAD(X) = median(abs.(X .- median(X)))
-@test MAD([1, 1, 2, 2, 4, 6, 9]) == 1
-
 function test_all(N = length(ENIST))
   E = zeros(N)
   for at_number=1:N
     element = keys(atomic_electron_configuration)[at_number]
     @info "Calculating $element:" 
-    results = lda(at_number)
+    results = lda(at_number, -35:0.1:20, Α = 1e6)
     E[at_number] = results.energy.total
     @info @sprintf("Energy levels for the %s atom are:", element)
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)
@@ -44,15 +40,28 @@ function test_all(N = length(ENIST))
     end
     @info @sprintf("ΔE = %12.6f", ENIST[at_number]-E[at_number])
   end
-  return E
+  return E, N
 end
 
-@time E = test_all();
+function summary(E, N)
+  # Median absolute deviation
+  MAD(X) = median(abs.(X .- median(X)))
 
-@info "== RESULTS SUMMARY =="
-for Z=1:length(ENIST)
-  element = keys(atomic_electron_configuration)[Z]
-  @info @sprintf("%2s: ΔE = %+e", element, ENIST[Z]-E[Z])
+  @info "== RESULTS SUMMARY =="
+  for Z=1:N
+    element = keys(atomic_electron_configuration)[Z]
+    @info @sprintf("%2s: ΔE = %12.6f", element, ENIST[Z]-E[Z])
+  end
+
+  err, atn = findmax(abs.(ENIST[1:N] .- E))
+  el = keys(atomic_electron_configuration)[atn]
+
+  @info "== STATISTICS =="
+  @info @sprintf("Median absolute deviation:\t%4.1e", MAD(ENIST[1:N] .- E))
+  @info @sprintf("Maximum absolute deviation:\t%4.1e is for %2s", err, el) 
 end
 
-MAD(ENIST .- E)
+summary(test_all()...)
+#[ Info: == STATISTICS ==
+#[ Info: Median absolute deviation:      2.5e-07
+#[ Info: Maximum absolute deviation:     5.4e-07 is for Rh
