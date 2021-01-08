@@ -8,7 +8,7 @@ include("dft_xc_functionals.jl")
 include("rshreq.jl")
 include("TF.jl")
 
-import LinearAlgebra: eigen!, diagind, Diagonal, Symmetric
+import LinearAlgebra: eigen!, eigen, diagind, Diagonal, diag, Symmetric
 import Printf: @sprintf
 
 export laplacian, radial_shr_eq, TF, lda
@@ -59,27 +59,28 @@ function lda(Z,
          maxit = 100,
              μ = 1)
 
-  # constant
   Α = 1e5
-  # initial value of the density mixing parameter
-  β = 0.8
+  β = 0.8  # initial value of the density mixing parameter
 
   # radial grid
-  r, n, dx = exp.(x), length(x), step(x)
-  r², sqr = exp.(2x), exp.(x/2)
-
+  r, r², sqr, n, dx = exp.(x), exp.(2x), exp.(x/2), length(x), step(x)
   @info @sprintf("A grid of %3i points x = %5.4f:%5.4f:%5.4f is used", n, x[1], dx, x[end])
 
+  ρᵢₙ, ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, V, vp, vh, vxc, εxc, ε = [similar(r) for _ = 1:10]
+
   Q = Nₑ(conf)
-  ρᵢₙ = TF.(r, Q) .* r
-  vp = Vex.(r)
+  @. ρᵢₙ = TF(r, Q) * r
+  @. vp  = Vex(r)
+
+  D = 1:n+1:n*n
 
   Δ = laplacian(x)
-  L = Δ - Diagonal(fill(1/4, n))
+  H = -1/2μ*Δ; HD = H[D]
 
-  Eₜₒₜ = 0.0; Δρ = 0.0; 
+  L = copy(Δ); L[D] .-= 1/4  
+  S = copy(H)
   
-  ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, V, vh, vxc, εxc = [similar(ρᵢₙ) for _ = 1:7]
+  Eₜₒₜ = 0.0; Δρ = 0.0;  
 
   @info @sprintf("Starting SCF procedure with convergence threshold |Δρ| ≤ %e", δn)
   @info "cycle\t\tenergy\t\t|Δρ|"
@@ -97,19 +98,20 @@ function lda(Z,
     xc!(ρᵢₙ ./ r, vxc, εxc)
 
     # Kohn-Sham potential
-    @. V = vp + vh + vxc
+    @. V = (vp + vh + vxc) * r²
 
     # Solve the Schrödinger equation to find new density
     # and bands energy ∑nᵢεᵢ
-    H = -1/2μ*Δ + Diagonal(V .* r²)
 
-    ∑nᵢεᵢ = 0.0; ρₒᵤₜ .= 0.0
+    ∑nᵢεᵢ = 0.0
+    ρₒᵤₜ .= 0.0
 
     # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
-      Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
-      θ, y = eigen!(Symmetric(Hl), Symmetric(Hl + Α * Diagonal(r²)))
-      ε = Α * θ ./ (1 .- θ)
+      @. H[D] = HD   + V + 1/2μ * (l - 1/2)^2
+      @. S[D] = H[D] + Α * r²
+      θ, y = eigen(Symmetric(H), Symmetric(S))
+      @. ε = Α * θ / (1 - θ)
       for (nᵣ, nᵢ) in enumerate(subshell)
         @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
         @views ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
@@ -139,6 +141,7 @@ function lda(Z,
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
   # get orbitals
+  @. V = vp + vh + vxc
   ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ)
   
   # remove numerical noise
