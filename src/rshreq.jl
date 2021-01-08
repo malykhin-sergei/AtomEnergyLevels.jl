@@ -48,22 +48,29 @@ julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3d1")).energy ≈ -1/18
 true
 ```
 """
-function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, α = 1e5)
+function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, Α = 1e6)
 
   if length(V) != length(x)
-    throw(DimensionMismatch("Arrays V and r have different length"))
+    throw(DimensionMismatch("V and r have different length"))
   end
   
   r, r², n, dx = exp.(x), exp.(2x), length(x), step(x)
   
-  H = -1/2μ*laplacian(n, dx) + Diagonal(V .* r²)
+  D = 1:n+1:n*n
 
-  ∑nᵢεᵢ = 0.0; ρ = zeros(n); ψ = Dict()
+  H = -1/2μ*laplacian(x); HD = H[D]
+  S = copy(H)
+  Vₚ = V .* r²
   
+  ε = similar(r); ρ = zero(r); ∑nᵢεᵢ = 0.0
+  
+  ψ = Dict()
+  # the equation is solved separately for each subshell: s, p, d, f
   for (l, subshell) in enumerate(conf)
-    Hl = H + Diagonal(fill(1/2μ * (l - 1/2)^2, n))
-    θ, y = eigen!(Hl, Hl + Diagonal(α * r²))
-    ε = α*θ ./ (1 .- θ)
+    @. H[D] = HD   + Vₚ + 1/2μ * (l - 1/2)^2
+    @. S[D] = H[D] + Α * r²
+    θ, y = eigen(Symmetric(H), Symmetric(S))
+    @. ε = Α * θ / (1 - θ)
     for (nᵣ, nᵢ) in enumerate(subshell)
       @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
       @views ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
@@ -73,5 +80,5 @@ function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf 
   end
   return (energy = ∑nᵢεᵢ, density = ρ, orbitals = ψ)
 end
-radial_shr_eq(V::Function = r -> -1/r, x = -30.0:0.1:5.0; conf = 1, μ = 1, α = 1e5) = 
-              radial_shr_eq(V.(exp.(x)), x, conf = conf, μ = μ, α = α)
+radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, Α = 1e5) = 
+              radial_shr_eq(V.(exp.(x)), x, conf = conf, μ = μ, Α = Α)
