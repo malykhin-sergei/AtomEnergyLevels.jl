@@ -80,7 +80,7 @@ function isotropic_harmonic_oscillator(cfg)
     n = nᵣ + l + 1
     ϵ_exact = 2nᵣ + l + 3/2
     @printf("%i%s\t%10.8f\t%10.8f\t%+0.6e\n",
-            n, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+            n, shells[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
   end
 end
 
