@@ -59,7 +59,7 @@ using Test, Printf
       ϵ_calc = orbital.ϵᵢ
       ϵ_exact = 2nᵣ + l + 3/2      
       @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
-      nᵣ, atomic_shell[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+      nᵣ, shells[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
       @test ϵ_calc ≈ ϵ_exact atol = 1e-10
     end
   end
@@ -86,7 +86,7 @@ using Test, Printf
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.946195 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.969812 atol = 1e-6 # Ekin
@@ -111,7 +111,7 @@ using Test, Printf
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.351708 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.405209 atol = 1e-6 # Ekin

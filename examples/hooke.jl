@@ -21,10 +21,10 @@ N² = 1 / (π^(3/2) * (8 + 5 * sqrt(π)));
 ρₑ = @. 2N² * exp(-1/2 * r^2) * (sqrt(π/2) * (7/4 + 1/4 * r^2 + (r + 1/r) * erf(r/sqrt(2))) + exp(-1/2 * r^2));
 
 α = 0.798
-xalpha = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2,
+xalpha = lda(2, x, conf = c"[He]", Vex = r -> 1/8 * r^2,
              xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = α));
 
-svwn5 = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2);
+svwn5 = lda(2, x, conf = c"[He]", Vex = r -> 1/8 * r^2);
 
 begin
     title("Hooke's atom density")

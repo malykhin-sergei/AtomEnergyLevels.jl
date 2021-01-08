@@ -15,13 +15,13 @@ export laplacian, radial_shr_eq, TF, lda
 export LDA_X, LDA_C_CHACHIYO, LDA_C_VWN
 export SVWN!, Xα!
 export conf_enc, Nₑ, @c_str
-export atomic_shell, atomic_electron_configuration
+export shells, atom
 export laplacian
 export radial_shr_eq
 
 """
 ```julia
-function lda(Z, x = -30.0:0.1:20.0; conf = atomic_electron_configuration[Z],
+function lda(Z, x = -30.0:0.1:20.0; conf = atom[Z],
              xc! = SVWN!, Vex = r -> -Z / r, δn = 1e-7, maxit = 100, μ = 1)
 ```
 Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using
@@ -52,7 +52,7 @@ lda(2, Vex = r -> 1/8 * r^2).energy.total;
 """
 function lda(Z,
              x = -35:0.1:20;             
-          conf = atomic_electron_configuration[Z],
+          conf = atom[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
             δn = 1e-8,

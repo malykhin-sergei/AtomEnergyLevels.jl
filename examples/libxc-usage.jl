@@ -17,7 +17,7 @@ function atom_ground_state(z, xcfun)
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @printf("\t%i%s\t(%4.1f)\t%14.6f\n", n, atomic_shell[l], nᵢ, ϵᵢ)
+      @printf("\t%i%s\t(%4.1f)\t%14.6f\n", n, shells[l], nᵢ, ϵᵢ)
     end
 end
   

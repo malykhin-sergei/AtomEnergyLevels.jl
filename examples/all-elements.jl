@@ -28,7 +28,7 @@ using Test, Printf, Statistics
 function test_all(N = length(ENIST))
   E = zeros(N)
   for at_number=1:N
-    element = keys(atomic_electron_configuration)[at_number]
+    element = keys(atom)[at_number]
     @info "Calculating $element:" 
     results = lda(at_number, -35:0.1:20, Α = 1e6)
     E[at_number] = results.energy.total
@@ -36,7 +36,7 @@ function test_all(N = length(ENIST))
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers 
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, atomic_shell[l], ψ.nᵢ, ψ.ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], ψ.nᵢ, ψ.ϵᵢ)
     end
     @info @sprintf("ΔE = %12.6f", ENIST[at_number]-E[at_number])
   end
@@ -49,12 +49,12 @@ function summary(E, N)
 
   @info "== RESULTS SUMMARY =="
   for Z=1:N
-    element = keys(atomic_electron_configuration)[Z]
+    element = keys(atom)[Z]
     @info @sprintf("%2s: ΔE = %12.6f", element, ENIST[Z]-E[Z])
   end
 
   err, atn = findmax(abs.(ENIST[1:N] .- E))
-  el = keys(atomic_electron_configuration)[atn]
+  el = keys(atom)[atn]
 
   @info "== STATISTICS =="
   @info @sprintf("Median absolute deviation:\t%4.1e", MAD(ENIST[1:N] .- E))
