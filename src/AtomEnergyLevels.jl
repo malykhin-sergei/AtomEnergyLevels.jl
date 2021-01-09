@@ -141,7 +141,7 @@ function lda(Z,
 
   # get orbitals
   @. V = vp + vh + vxc
-  ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ, Α = Α)
+  ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ, Α = 1e5)
   
   # total energy components:
   Ek  = ∑ε - 4π * ∫(dx, ρ .* V .* r²)

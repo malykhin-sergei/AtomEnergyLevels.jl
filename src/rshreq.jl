@@ -48,7 +48,7 @@ julia> radial_shr_eq(r -> -1/r, conf = conf_enc("3d1")).energy ≈ -1/18
 true
 ```
 """
-function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, Α = 1e6)
+function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, Α = 1e5)
 
   if length(V) != length(x)
     throw(DimensionMismatch("V and r have different length"))
