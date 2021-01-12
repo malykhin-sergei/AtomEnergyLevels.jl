@@ -51,7 +51,7 @@ lda(2, Vex = r -> 1/8 * r^2).energy.total;
 ```
 """
 function lda(Z,
-             x = -35:0.1:20;             
+             x = -35:0.1:5;             
           conf = atom[Z],
            xc! = SVWN!,
            Vex = r -> -Z / r,
@@ -74,22 +74,25 @@ function lda(Z,
 
   D = 1:n+1:n*n
 
-  Δ = laplacian(x)
-  H = -1/2μ*Δ; HD = H[D]
-  L = Δ - 1/4*I 
+  H = -1/2μ*laplacian(x); HD = H[D]
   S = copy(H)
   
+  xl = first(x):step(x):25
+  nl = length(xl)
+  rmin, rmax = exp(first(xl)), exp(last(xl)) 
+  Δ = laplacian(xl) - 1/4*I 
+    
   Eₜₒₜ = 0.0; Δρ = 0.0;  
 
   @info @sprintf("Starting SCF procedure with convergence threshold |Δρ| ≤ %e", δn)
   @info "cycle\t\tenergy\t\t|Δρ|"
   for i = 0:maxit
     # Solve the Poisson equation to obtain Hartree potential
-    vh .= L \ (-4π * ρᵢₙ .* sqr .* r)
+    v = Δ \ vcat(-4π .* ρᵢₙ .* sqr .* r, zeros(nl - n))
     # Apply boundary conditions at r → 0 and r → ∞
-    c₁ = (sqr[1]*vh[1] - sqr[n]*vh[n] + Q*(1 - r[1])) / (r[n] - r[1])
-    c₂ = -(r[n]*sqr[1]*vh[1] - sqr[n]*r[1]*vh[n] + Q*r[1]*(1 - r[n])) / (r[n] - r[1])
-    @. vh += c₁ * sqr + c₂ / sqr
+    c₁ =  (√rmin * v[1] - √rmax * v[end] + Q * (1 - rmin)) / (rmax - rmin)
+    c₂ = -(rmin  * √rmin * v[1] - √rmax * rmin * v[end] + Q * rmin * (1 - rmax)) / (rmax - rmin)
+    @. vh = @views v[1:n] + c₁ * sqr + c₂ / sqr
     # Change variable vh(x) → vh(r)
     @. vh /= sqr
 
