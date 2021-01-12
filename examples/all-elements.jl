@@ -30,7 +30,7 @@ function test_all(N = length(ENIST))
   for at_number=1:N
     element = keys(atom)[at_number]
     @info "Calculating $element:" 
-    results = lda(at_number, -35:0.1:20, Α = 1e6)
+    results = lda(at_number, -35:0.1:5, Α = 1e5)
     E[at_number] = results.energy.total
     @info @sprintf("Energy levels for the %s atom are:", element)
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)
@@ -64,4 +64,4 @@ end
 summary(test_all()...)
 #[ Info: == STATISTICS ==
 #[ Info: Median absolute deviation:      2.5e-07
-#[ Info: Maximum absolute deviation:     5.4e-07 is for Rh
+#[ Info: Maximum absolute deviation:     5.4e-07 is for Ir
