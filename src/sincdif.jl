@@ -36,3 +36,17 @@ function laplacian(n, h)
   return Δ
 end
 laplacian(x::AbstractRange) = laplacian(length(x), step(x))
+
+function FGH(x::AbstractRange)
+  N, Δx = length(x), step(x)
+  iseven(N) && throw(DomainError(N, "number of grid points must be odd"))
+  K = zeros(N, N)
+  for d=0:N-1
+    # See Eq. 26 // C. Clay Marston et al. The Fourier grid Hamiltonian method 
+    # for bound state eigenvalues and eigenfunctions. JCP 91, 3571 (1989)
+    # d ≝ i - j
+    K[diagind(K, d)] = K[diagind(K, -d)] .= 
+    -2/N*(2π/N)^2 / Δx^2 * sum(l -> cos(2π*l*d/N)*l^2, 1:(N >> 1))
+  end
+  return K
+end
