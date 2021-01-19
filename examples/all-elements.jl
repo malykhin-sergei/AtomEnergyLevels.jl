@@ -38,7 +38,7 @@ function test_all(N = length(ENIST))
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers 
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], ψ.nᵢ, ψ.ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l + 1], ψ.nᵢ, ψ.ϵᵢ)
     end
     @info @sprintf("ΔE = %12.6f", ENIST[at_number]-E[at_number])
   end
@@ -61,7 +61,7 @@ function summary(E, N, it)
   @info "== STATISTICS =="
   @info @sprintf("Median absolute deviation:\t%4.1e", MAD(ENIST[1:N] .- E))
   @info @sprintf("Maximum absolute deviation:\t%4.1e is for %2s", err, el)
-  @info @sprintf("Average number of iterations:\t%3i", mean(it)) 
+  @info @sprintf("Average number of iterations:\t%i", mean(it)) 
 end
 
-summary(test_all()...)
+summary(test_all(10)...)

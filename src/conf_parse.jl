@@ -63,9 +63,9 @@ function conf_enc(input::AbstractString;
     s -> replace(s, "[ne]" => "[he] 2s2 2p6") |>
     s -> replace(s, "[he]" => "1s2")
                                        
-    configuration = []
+    configuration = Vector{Vector{Float64}}()
     buff = zeros(length(notation), maxn)
-    uniq = Set{Tuple{Int64,Int64}}()
+    uniq = Set{Tuple{Int,Int}}()
     lmax = 0
     
     # parse subshells, check for physical sense 
@@ -95,7 +95,6 @@ function conf_enc(input::AbstractString;
         buff[l + 1,n] = occ 
     end
 
-    # construct electronic configuration tuple
     for l in 0:lmax
         subshell = []; flag = true
         for n in maxn:-1:(l + 1)
@@ -105,9 +104,9 @@ function conf_enc(input::AbstractString;
             flag = false
             push!(subshell, buff[l + 1, n])
         end
-        push!(configuration, tuple(reverse(subshell)...))
+        push!(configuration, reverse(subshell))
     end        
-    return tuple(configuration...)
+    return configuration
 end
 
 Nₑ(conf) = sum(Iterators.flatten(conf))

@@ -10,10 +10,10 @@ using Test, Printf
   end
 
   @testset "Parsing electronic configuration" begin
-    @test c"1s1"              == ((1.0,),)
-    @test c"[He] 2s1"         == ((2.0, 1.0),)
-    @test c"[He] 2s2 2p4"     == ((2.0, 2.0), (4.0,))
-    @test c"[Xe] 4f1 5d1 6s2" == ((2.0, 2.0, 2.0, 2.0, 2.0, 2.0), (6.0, 6.0, 6.0, 6.0), (10.0, 10.0, 1.0), (1.0,))
+    @test c"1s1"              == [[1.0]]
+    @test c"[He] 2s1"         == [[2.0, 1.0]]
+    @test c"[He] 2s2 2p4"     == [[2.0, 2.0], [4.0]]
+    @test c"[Xe] 4f1 5d1 6s2" == [[2.0, 2.0, 2.0, 2.0, 2.0, 2.0], [6.0, 6.0, 6.0, 6.0], [10.0, 10.0, 1.0], [1.0]]
     @test_throws DomainError conf_enc("[Ge] 1s1")
     @test_throws DomainError conf_enc("[Rn]", maxn = 5)
     @test_throws DomainError conf_enc("[He] 2d1")
@@ -51,7 +51,7 @@ using Test, Printf
     @info "Hamiltonian is:  H = -1/2μ⋅Δ + 1/2⋅k⋅r²"
     @info "Eigenvalues are: E = ħω⋅(2nᵣ + l + 3/2),"
     @info "where nᵣ = 0, 1, 2...; l = 0, 1, 2..., and ω² = k/μ"
-    config = ((0,0,0,), (0,0,0), (0,0,0))
+    config = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     ψ = radial_shr_eq(r -> 1/2*r^2, conf = config).orbitals
     @info "nᵣ\tl\tϵ(calc.)\tϵ(exact)\tΔϵ"
     for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
@@ -59,7 +59,7 @@ using Test, Printf
       ϵ_calc = orbital.ϵᵢ
       ϵ_exact = 2nᵣ + l + 3/2      
       @info @sprintf("%i\t%s\t%10.8f\t%10.8f\t%+0.6e",
-      nᵣ, shells[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+      nᵣ, shells[l + 1], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
       @test ϵ_calc ≈ ϵ_exact atol = 1e-10
     end
   end
@@ -86,7 +86,7 @@ using Test, Printf
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l + 1], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.946195 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.969812 atol = 1e-6 # Ekin
@@ -111,7 +111,7 @@ using Test, Printf
       nᵣ, l = quantum_numbers
       nᵢ, ϵᵢ = orbital.nᵢ, orbital.ϵᵢ
       n = nᵣ + l + 1
-      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l], nᵢ, ϵᵢ)
+      @info @sprintf("\t%i%s\t(%4.1f)\t%14.6f", n, shells[l + 1], nᵢ, ϵᵢ)
     end
     @test E.total     ≈  -525.351708 atol = 5e-7 # Etot
     @test E.kinetic   ≈   524.405209 atol = 1e-6 # Ekin

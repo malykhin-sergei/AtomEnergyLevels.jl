@@ -52,14 +52,14 @@ lda(2, Vex = r -> 1/8 * r^2).energy.total;
 """
 function lda(Z::Real,
              x::AbstractRange = -35:0.1:5;             
-          conf = atom[Z],
+          conf::Array{Array{T,1},1} = atom[Z],
            xc!::Function = SVWN!,
            Vex::Function = r -> -Z / r,
             δn::Real = 1e-8,
          maxit::Integer = 100,
              μ::Real = 1,
           xmax::Real = 25,
-             Α::Real = 1e5)
+             Α::Real = 1e5) where T <: Real
 
   # radial grid
   r, r², sqr, n, dx = exp.(x), exp.(2x), exp.(x/2), length(x), step(x)
