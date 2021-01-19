@@ -27,11 +27,13 @@ using Test, Printf, Statistics
 
 function test_all(N = length(ENIST))
   E = zeros(N)
+  it = zeros(N)
   for at_number=1:N
     element = keys(atom)[at_number]
     @info "Calculating $element:" 
     results = lda(at_number, -35:0.1:5, Α = 1e5)
     E[at_number] = results.energy.total
+    it[at_number] = results.iterations
     @info @sprintf("Energy levels for the %s atom are:", element)
     for (quantum_numbers, ψ) in sort(collect(results.orbitals), by = x -> last(x).ϵᵢ)
       nᵣ, l = quantum_numbers 
@@ -40,10 +42,10 @@ function test_all(N = length(ENIST))
     end
     @info @sprintf("ΔE = %12.6f", ENIST[at_number]-E[at_number])
   end
-  return E, N
+  return E, N, it
 end
 
-function summary(E, N)
+function summary(E, N, it)
   # Median absolute deviation
   MAD(X) = median(abs.(X .- median(X)))
 
@@ -58,7 +60,8 @@ function summary(E, N)
 
   @info "== STATISTICS =="
   @info @sprintf("Median absolute deviation:\t%4.1e", MAD(ENIST[1:N] .- E))
-  @info @sprintf("Maximum absolute deviation:\t%4.1e is for %2s", err, el) 
+  @info @sprintf("Maximum absolute deviation:\t%4.1e is for %2s", err, el)
+  @info @sprintf("Average number of iterations:\t%3i", mean(it)) 
 end
 
 summary(test_all()...)

@@ -65,7 +65,7 @@ function lda(Z::Real,
   r, r², sqr, n, dx = exp.(x), exp.(2x), exp.(x/2), length(x), step(x)
   @info @sprintf("A grid of %3i points x = %5.4f:%5.4f:%5.4f is used", n, x[1], dx, x[end])
 
-  ρᵢₙ, ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, β, V, vp, vh, vxc, εxc, ε = [similar(r) for _ = 1:11]
+  ρᵢₙ, ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, V, vp, vh, vxc, εxc, ε = [similar(r) for _ = 1:10]
 
   Q = Nₑ(conf)
 
@@ -91,9 +91,9 @@ function lda(Z::Real,
   @info "cycle\t\tenergy\t\t|Δρ|"
 
   # initial value of the density mixing parameter
-  β .= 0.8
+  β = 0.8
 
-  Eₜₒₜ = 0.0; Δρ = 0.0
+  Eₜₒₜ = 0.0; Δρ = 0.0; it = 0
   for i = 0:maxit
     # Poisson equation solution is Hartree potential, vh
     v = Δ \ vcat(-4π .* ρᵢₙ .* sqr .* r, zeros(nl - n))
@@ -132,17 +132,26 @@ function lda(Z::Real,
 
     Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ .- ρᵢₙ) .* r²)
     @info @sprintf "%3i\t%14.6f\t%14.8f" i Eₜₒₜ Δρ
-    Δρ < δn && break
+    if Δρ < δn
+      it = i
+      break
+    end
 
     # Convergence acceleration scheme
     if i > 0
-      @. β = min(max(1 / (1 - (ρₒᵤₜ - prev_ρₒᵤₜ) / (ρᵢₙ - prev_ρᵢₙ)), 0.1), 0.9)
+      dρ = ∫(dx, ρₒᵤₜ .- prev_ρₒᵤₜ) / ∫(dx, ρᵢₙ .- prev_ρᵢₙ)
+      β = min(max(1 / (1 - dρ), 0.1), 0.9)
     end
     @. prev_ρᵢₙ  = ρᵢₙ
     @. prev_ρₒᵤₜ = ρₒᵤₜ
     @. ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
-  Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
+
+  if Δρ > δn
+    @warn "SCF does not converged after $maxit iterations!"
+  else
+    @info "SCF has converged after $it iterations"
+  end
 
   # Wavefunctions (orbitals)
   @. V = vp + vh + vxc
@@ -167,6 +176,6 @@ function lda(Z::Real,
       VIRIAL RATIO           %16.6f\n", Ek, Eh, Exc, Ep, E, VR)
       
   return (energy = (total = E, kinetic = Ek, hartree = Eh, 
-          xc = Exc, potential = Ep), density = ρ, orbitals = ψ)
+          xc = Exc, potential = Ep), density = ρ, orbitals = ψ, iterations = it)
 end
 end # module
