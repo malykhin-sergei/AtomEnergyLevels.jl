@@ -61,39 +61,48 @@ function lda(Z::Real,
           xmax::Real = 25,
              Α::Real = 1e5)
 
-  β = 0.8  # initial value of the density mixing parameter
-
   # radial grid
   r, r², sqr, n, dx = exp.(x), exp.(2x), exp.(x/2), length(x), step(x)
   @info @sprintf("A grid of %3i points x = %5.4f:%5.4f:%5.4f is used", n, x[1], dx, x[end])
 
-  ρᵢₙ, ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, V, vp, vh, vxc, εxc, ε = [similar(r) for _ = 1:10]
+  ρᵢₙ, ρₒᵤₜ, prev_ρᵢₙ, prev_ρₒᵤₜ, β, V, vp, vh, vxc, εxc, ε = [similar(r) for _ = 1:11]
 
   Q = Nₑ(conf)
+
+  # Thomas-Fermi density for neutral atom with Q electrons
   @. ρᵢₙ = TF(r, Q) * r
   @. vp  = Vex(r)
 
-  D = 1:n+1:n*n
+  # Indices of the main diagonal
+  D = 1:n+1:n*n 
 
   H = -1/2μ*laplacian(x); HD = H[D]
   S = copy(H)
   
+  # Large grid for the Poisson equation
   xl = first(x):step(x):xmax
   nl = length(xl)
-  rmin, rmax = exp(first(xl)), exp(last(xl)) 
+  rmin, rmax = exp(first(xl)), exp(last(xl))
+  
+  # Differential operator of the Poisson equation
   Δ = laplacian(xl) - 1/4*I 
     
-  Eₜₒₜ = 0.0; Δρ = 0.0;  
-
   @info @sprintf("Starting SCF procedure with convergence threshold |Δρ| ≤ %e", δn)
   @info "cycle\t\tenergy\t\t|Δρ|"
+
+  # initial value of the density mixing parameter
+  β .= 0.8
+
+  Eₜₒₜ = 0.0; Δρ = 0.0
   for i = 0:maxit
-    # Solve the Poisson equation to obtain Hartree potential
+    # Poisson equation solution is Hartree potential, vh
     v = Δ \ vcat(-4π .* ρᵢₙ .* sqr .* r, zeros(nl - n))
+    
     # Apply boundary conditions at r → 0 and r → ∞
     c₁ =  (√rmin * v[1] - √rmax * v[end] + Q * (1 - rmin)) / (rmax - rmin)
     c₂ = -(rmin  * √rmin * v[1] - √rmax * rmin * v[end] + Q * rmin * (1 - rmax)) / (rmax - rmin)
     @. @views vh = v[1:n] + c₁ * sqr + c₂ / sqr
+    
     # Change variable vh(x) → vh(r)
     @. vh /= sqr
 
@@ -103,13 +112,9 @@ function lda(Z::Real,
     # Kohn-Sham potential
     @. V = (vp + vh + vxc) * r²
 
-    # Solve the Schrödinger equation to find new density
-    # and bands energy ∑nᵢεᵢ
+    # Schrödinger equation
+    ∑nᵢεᵢ = 0.0; ρₒᵤₜ .= 0.0
 
-    ∑nᵢεᵢ = 0.0
-    ρₒᵤₜ .= 0.0
-
-    # the equation is solved separately for each subshell: s, p, d, f
     for (l, subshell) in enumerate(conf)
       @. H[D] = HD   + V + 1/2μ * (l - 1/2)^2
       @. S[D] = H[D] + Α * r²
@@ -121,38 +126,36 @@ function lda(Z::Real,
         ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       end
     end
-    E = Eₜₒₜ
-    # DFT total energy:
-    # (https://www.theoretical-physics.net/dev/quantum/dft.html#total-energy)
+
+    # DFT total energy
     Eₜₒₜ = ∑nᵢεᵢ + 4π * ∫(dx, ρₒᵤₜ .* (-1/2 * vh .- vxc .+ εxc) .* r²)
 
     Δρ = 4π * ∫(dx, abs.(ρₒᵤₜ .- ρᵢₙ) .* r²)
-    @info @sprintf "%3i\t%14.6f\t%12.6f" i Eₜₒₜ Δρ
-
-    # density converged if there are no more charge oscillations
+    @info @sprintf "%3i\t%14.6f\t%14.8f" i Eₜₒₜ Δρ
     Δρ < δn && break
 
+    # Convergence acceleration scheme
     if i > 0
-      dρₒᵤₜ = ∫(dx, (ρₒᵤₜ .- prev_ρₒᵤₜ) .* r) / ∫(dx, (ρᵢₙ .- prev_ρᵢₙ) .* r)
-      β = min(max(1/(1 - dρₒᵤₜ), 0.1), 0.9)
+      @. β = min(max(1 / (1 - (ρₒᵤₜ - prev_ρₒᵤₜ) / (ρᵢₙ - prev_ρᵢₙ)), 0.1), 0.9)
     end
     @. prev_ρᵢₙ  = ρᵢₙ
     @. prev_ρₒᵤₜ = ρₒᵤₜ
-    # admix density from previous iteration to converge SCF
     @. ρᵢₙ = (1 - β) * ρᵢₙ + β * ρₒᵤₜ
   end
   Δρ > δn && @warn "SCF does not converged after $maxit iterations!"
 
-  # get orbitals
+  # Wavefunctions (orbitals)
   @. V = vp + vh + vxc
   ∑ε, ρ, ψ = radial_shr_eq(V, x, conf = conf, μ = μ, Α = 1e5)
   
-  # total energy components:
+  # Total energy components:
   Ek  = ∑ε - 4π * ∫(dx, ρ .* V .* r²)
   Eh  = 2π * ∫(dx, ρ .* vh .* r²)
   Exc = 4π * ∫(dx, ρ .* εxc .* r²)
   Ep  = 4π * ∫(dx, ρ .* vp .* r²)
   E   = Ek + Ep + Eh + Exc
+  
+  # Virial ratio
   VR  = (Eh + Exc + Ep) / -Ek
 
   @info @sprintf("RESULTS SUMMARY:
