@@ -80,7 +80,7 @@ function lda(Z::Real,
   S = copy(H)
   
   # Large grid for the Poisson equation
-  xl = first(x):step(x):xmax
+  xl = first(x):step(x):max(xmax, last(x))
   nl = length(xl)
   rmin, rmax = exp(first(xl)), exp(last(xl))
   

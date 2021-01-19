@@ -65,6 +65,3 @@ function summary(E, N, it)
 end
 
 summary(test_all()...)
-#[ Info: == STATISTICS ==
-#[ Info: Median absolute deviation:      2.5e-07
-#[ Info: Maximum absolute deviation:     5.4e-07 is for Ir
