@@ -93,7 +93,7 @@ function lda(Z::Real,
     # Apply boundary conditions at r → 0 and r → ∞
     c₁ =  (√rmin * v[1] - √rmax * v[end] + Q * (1 - rmin)) / (rmax - rmin)
     c₂ = -(rmin  * √rmin * v[1] - √rmax * rmin * v[end] + Q * rmin * (1 - rmax)) / (rmax - rmin)
-    @. vh = @views v[1:n] + c₁ * sqr + c₂ / sqr
+    @. @views vh = v[1:n] + c₁ * sqr + c₂ / sqr
     # Change variable vh(x) → vh(r)
     @. vh /= sqr
 
@@ -116,7 +116,7 @@ function lda(Z::Real,
       θ, y = eigen(Symmetric(H), Symmetric(S))
       @. ε = Α * θ / (1 - θ)
       for (nᵣ, nᵢ) in enumerate(subshell)
-        @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+        @views y[:, nᵣ] ./= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
         @views ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
         ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       end

@@ -71,7 +71,7 @@ function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf 
     θ, y = eigen(Symmetric(H), Symmetric(S))
     @. ε = Α * θ / (1 - θ)
     for (nᵣ, nᵢ) in enumerate(subshell)
-      @views y[:, nᵣ] /= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
+      @views y[:, nᵣ] ./= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
       @views ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
       ∑nᵢεᵢ += nᵢ * ε[nᵣ]
       ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
