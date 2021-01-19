@@ -58,17 +58,16 @@ function radial_shr_eq(V::AbstractArray, x::AbstractRange = -30.0:0.1:5.0; conf 
   
   D = 1:n+1:n*n
 
-  H = -1/2μ*laplacian(x); HD = H[D]
+  H = -1/2μ*laplacian(x); HD = H[D] .+ V .* r²
   S = copy(H)
-  Vₚ = V .* r²
-  
+ 
   ε = similar(r); ρ = zero(r); ∑nᵢεᵢ = 0.0
   
   ψ = Dict()
   # the equation is solved separately for each subshell: s, p, d, f
   for (l, subshell) in enumerate(conf)
-    @. H[D] = HD   + Vₚ + 1/2μ * (l - 1/2)^2
-    @. S[D] = H[D] + Α * r²
+    @. H[D] = HD + 1/2μ * (l - 1/2)^2
+    @. @views S[D] = H[D] + Α * r²
     θ, y = eigen(Symmetric(H), Symmetric(S))
     @. ε = Α * θ / (1 - θ)
     for (nᵣ, nᵢ) in enumerate(subshell)

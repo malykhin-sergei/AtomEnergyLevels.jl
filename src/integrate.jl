@@ -1,6 +1,6 @@
 # rectangle rule for integration is accurate enough
 ∫(h, f) = h*sum(f)
-
+#=
 function simpson(f, x)
     n = length(x)
     h = [x[i] - x[i-1] for i in 2:n]
@@ -21,3 +21,4 @@ function simpson(f, x)
 
     return result    
 end
+=#

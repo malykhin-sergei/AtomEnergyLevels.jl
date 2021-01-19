@@ -8,7 +8,7 @@ include("dft_xc_functionals.jl")
 include("rshreq.jl")
 include("TF.jl")
 
-import LinearAlgebra: I, eigen!, eigen, diagind, Diagonal, diag, Symmetric
+import LinearAlgebra: I, eigen, diagind, Symmetric
 import Printf: @sprintf
 
 export laplacian, radial_shr_eq, TF, lda
@@ -50,15 +50,16 @@ On output:
 lda(2, Vex = r -> 1/8 * r^2).energy.total;
 ```
 """
-function lda(Z,
-             x = -35:0.1:5;             
+function lda(Z::Real,
+             x::AbstractRange = -35:0.1:5;             
           conf = atom[Z],
-           xc! = SVWN!,
-           Vex = r -> -Z / r,
-            δn = 1e-8,
-         maxit = 100,
-             μ = 1,
-             Α = 1e5)
+           xc!::Function = SVWN!,
+           Vex::Function = r -> -Z / r,
+            δn::Real = 1e-8,
+         maxit::Integer = 100,
+             μ::Real = 1,
+          xmax::Real = 25,
+             Α::Real = 1e5)
 
   β = 0.8  # initial value of the density mixing parameter
 
@@ -77,7 +78,7 @@ function lda(Z,
   H = -1/2μ*laplacian(x); HD = H[D]
   S = copy(H)
   
-  xl = first(x):step(x):25
+  xl = first(x):step(x):xmax
   nl = length(xl)
   rmin, rmax = exp(first(xl)), exp(last(xl)) 
   Δ = laplacian(xl) - 1/4*I 
