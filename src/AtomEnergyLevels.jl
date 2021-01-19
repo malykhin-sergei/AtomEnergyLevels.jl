@@ -175,7 +175,7 @@ function lda(Z::Real,
       TOTAL ENERGY           %16.6f
       VIRIAL RATIO           %16.6f\n", Ek, Eh, Exc, Ep, E, VR)
       
-  return (energy = (total = E, kinetic = Ek, hartree = Eh, 
-          xc = Exc, potential = Ep), density = ρ, orbitals = ψ, iterations = it)
+  return (energy  = (total = E, kinetic = Ek, hartree = Eh, xc = Exc, potential = Ep), 
+          density = ρ, orbitals = ψ, iterations = Int(it))
 end
 end # module
