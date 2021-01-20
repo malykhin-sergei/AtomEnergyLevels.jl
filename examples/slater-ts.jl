@@ -20,3 +20,16 @@ function slater_ts(Z)
     end
 end
 
+slater_ts(36)
+#=
+== Electron binding energies of the Kr atom, eV ==
+
+        1S         -14097.00
+        2S          -1838.84
+        2P          -1676.35
+        3S           -266.07
+        3P           -205.35
+        3D            -96.10
+        4S            -27.95
+        4P            -14.40
+=#
