@@ -17,6 +17,18 @@ function LDA_X(ρ; α = 2/3)
 end
 
 """
+    LDA_C_XALPHA(ρ; α = 1)
+    
+Slater’s Xα
+
+## References
+
+1. J.C. Slater, Phys. Rev. 81, 385 (1951) (doi: 10.1103/PhysRev.81.385)
+2. J.C. Slater, T.M. Wilson, and J.H. Wood, Phys. Rev. 179, 28 (1969)
+"""
+LDA_C_XALPHA(ρ; α = 1) = LDA_X(ρ, α = α - 2/3)
+
+"""
     LDA_C_CHACHIYO(ρ; a  = -0.01554535, b₁ = 20.4562557, b  = 20.4562557)
 
 Gives Chachiyo's approximation of the correlation energy density 
@@ -27,11 +39,7 @@ Gives Chachiyo's approximation of the correlation energy density
 1. T. Chachiyo, J. Chem. Phys. 145, 021101 (2016) (doi: 10.1063/1.4958669)
 """
 function LDA_C_CHACHIYO(ρ; a  = -0.01554535, b₁ = 20.4562557, b  = 20.4562557)
-
-  ρ <= eps() && return 0.0, 0.0
-
   rs = (3/4π / ρ)^(1/3)
-
   ϵc = a * log(1 + b₁ / rs + b / rs^2)
   vc = ϵc + a * (b₁ * rs + 2b) / (3 * (rs^2 + b₁ * rs + b))
   return vc, ϵc
@@ -48,7 +56,6 @@ Gives VWN5 approximation of the correlation energy density
 1. S.H. Vosko, L. Wilk, and M. Nusair, Can. J. Phys. 58, 1200 (1980) (doi: 10.1139/p80-159)
 """
 function LDA_C_VWN(ρ; a = 0.0310907, b = 3.72744, c = 12.9352, x0 = -0.10498)
-  ρ <= eps() && return 0.0, 0.0
   rs = (3/4π/ρ)^(1/3)
   q = sqrt(4.0 * c - b * b)
   f1 = 2.0 * b / q
@@ -64,15 +71,16 @@ function LDA_C_VWN(ρ; a = 0.0310907, b = 3.72744, c = 12.9352, x0 = -0.10498)
   return vc, ϵc
 end
 
-function SVWN!(ρ, vxc, εxc)
-  @simd for i in eachindex(ρ)
-    @inbounds vxc[i], εxc[i] = LDA_X(ρ[i]) .+ LDA_C_VWN(ρ[i]) 
-  end
-end
-
-function Xα!(ρ, vxc, εxc; α = 0.7)
-  @simd for i in eachindex(ρ)
-    @inbounds vxc[i], εxc[i] = LDA_X(ρ[i], α = α) 
+function xc_lda(exch_fun, corr_fun, threshold = eps())
+  function xc!(ρ, vxc, exc)
+    for i in eachindex(ρ)
+      if ρ[i] ≤ threshold
+        @inbounds vxc[i], exc[i] = 0, 0
+      else
+        @inbounds vxc[i], exc[i] = exch_fun(ρ[i]) .+ corr_fun(ρ[i])
+      end
+    end
+    return vxc, exc
   end
 end
 

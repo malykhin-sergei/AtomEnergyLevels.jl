@@ -70,9 +70,8 @@ using Test, Printf
     @info "An exact solution for Hooke's atom is E = 2.0 a.u."
     @info "For the Xα method α is adjustable parameter."
     @info "Here we reproduce exact Hooke atom energy with α = 0.83685294"
-    Etot = lda(2, conf = c"[He]", 
-               xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = 0.83685294), 
-               Vex = r -> 1/8 * r^2).energy.total
+    Etot = lda(2, conf = c"[He]", Vex = r -> 1/8 * r^2,
+                 xc_func! = xc_lda(LDA_X, ρ -> LDA_C_XALPHA(ρ, α = 0.83685294))).energy.total
     @test Etot ≈ 2.0 atol = 1e-7
   end
 

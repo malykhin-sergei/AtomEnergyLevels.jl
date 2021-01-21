@@ -1,21 +1,21 @@
 """
 ```julia
-function lda(Z[, x]; config, xcfun=SVWN, Vex = r -> -Z/r, δn=1e-8, maxit=100, xmax=25, Α=1e5)
+function lda(Z[, x]; conf, xc_func! = xc_lda(LDA_X, LDA_C_VWN), Vex = r -> -Z/r, δn=1e-8, maxit=100, xmax=25, Α=1e5)
 ```
 Solve Kohn-Sham DFT Self-Consistent Field equations for an atom using
 [local density approximation (LDA)](https://en.wikipedia.org/wiki/Local-density_approximation)
 
 On input:
 
-* `Z`     - nuclear charge
-* `x`     - grid, xᵢ = log(rᵢ)
-* `conf`  - electronic configuration, i.e. `c"[He] 2s2 2p4"`
-* `xcfun` - LDA exchange-correlation functional
-* `Vex`   - external potential, Coulomb -Z/r by default
-* `δn`    - density convergence criterion
-* `maxit` - maximum permissible number of SCF iterations
-* `xmax`  - grid is enlarged to this value for the Poisson equation solution
-* `Α`     - parameter for the convex matrix pencil formulation
+* `Z`        - nuclear charge
+* `x`        - grid, xᵢ = log(rᵢ), default is 401 points -35:0.1:5
+* `conf`     - electronic configuration, i.e. `c"[He] 2s2 2p4"`, by default `conf = atom[Z]`
+* `xc_func!` - LDA exchange-correlation functional, default is Slater exchange + VWN correlation
+* `Vex`      - external potential, Coulomb -Z/r by default
+* `δn`       - density convergence criterion
+* `maxit`    - maximum permissible number of SCF iterations
+* `xmax`     - grid is enlarged to this value for the Poisson equation solution
+* `Α`        - parameter for the convex matrix pencil formulation
 
 On output the function returns tuple: `(energy  = (total = E, kinetic = Ek, hartree = Eh, xc = Exc, potential = Ep), density = ρ, orbitals = ψ, iterations = Int(it))`
 where
@@ -56,13 +56,13 @@ julia> lda(2, Vex = r -> 1/8 * r^2).energy.total
 function lda(Z::Real,
              x::AbstractRange = -35:0.1:5;             
           conf::Array{Array{T,1},1} = atom[Z],
-           xc!::Function = SVWN!,
+      xc_func!::Function = xc_lda(LDA_X, LDA_C_VWN),
            Vex::Function = r -> -Z / r,
             δn::Real = 1e-8,
          maxit::Integer = 100,
           xmax::Real = 25,
              Α::Real = 1e5) where T <: Real
- 
+  
   μ = 1    # electron mass, a.u.
   β = 0.8  # initial value of the density mixing parameter
 
@@ -106,10 +106,10 @@ function lda(Z::Real,
     @. @views vh = v[1:n] + c₁ * sqr + c₂ / sqr
     
     # Change variable vh(x) → vh(r)
-    @. vh /= sqr
+    vh ./= sqr
 
     # Exchange-correlation potential and energy density
-    xc!(ρᵢₙ ./ r, vxc, εxc)
+    xc_func!(ρᵢₙ ./ r, vxc, εxc)
 
     # Kohn-Sham potential
     @. V = (vp + vh + vxc) * r²
