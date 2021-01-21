@@ -1,9 +1,9 @@
 # Sober Physicists Don't Find Giraffes Hiding In Kitchens
-shells = "SPDFGHIK"
+const shells = "SPDFGHIK"
 
 # Electronic configurations of the elements, taken from
 # https://math.nist.gov/DFTdata/atomdata/configuration.html
-atom = (
+const atom = (
 H  = c"1s1",
 He = c"[He]",
 Li = c"[He] 2s1",

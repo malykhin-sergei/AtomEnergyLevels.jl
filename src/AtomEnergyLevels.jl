@@ -14,7 +14,6 @@ include("lda.jl")
 
 export laplacian, radial_shr_eq, TF, lda
 export xc_lda, LDA_X, LDA_C_XALPHA, LDA_C_CHACHIYO, LDA_C_VWN
-export SVWN!, Xα!
 export conf_enc, Nₑ, @c_str
 export shells, atom
 export laplacian
