@@ -2,19 +2,17 @@ using AtomEnergyLevels, Libxc, Printf, Test
 
 function libxcfun(xc::Symbol, threshold = eps())
     fxc = Functional(xc)
-    if getproperty(fxc, :kind) == :exchange_correlation
-        fxc.density_threshold = threshold
-        function xc!(ρ, vxc, exc)
-            xc = evaluate(fxc, rho = ρ)
-            for i in eachindex(ρ)
-                @inbounds vxc[i], exc[i] = xc.vrho[i], xc.zk[i]
-            end
-            return vxc, exc
-        end
-    else
+    if getproperty(fxc, :kind) ≠ :exchange_correlation
         throw(DomainError(getproperty(fxc, :identifier), "is not an exchange-correlation functional"))
     end
-    return xc!
+    fxc.density_threshold = threshold
+    function xc!(ρ, vxc, exc)
+        xc = evaluate(fxc, rho = ρ)
+        for i in eachindex(ρ)
+            @inbounds vxc[i], exc[i] = xc.vrho[i], xc.zk[i]
+        end
+        return vxc, exc
+    end
 end
 
 function libxcfun(x::Symbol, c::Symbol, threshold = eps())
