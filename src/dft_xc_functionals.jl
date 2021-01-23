@@ -73,12 +73,8 @@ end
 
 function xc_lda(exch_fun, corr_fun, threshold = eps())
   function xc!(ρ, vxc, exc)
-    for i in eachindex(ρ)
-      if ρ[i] ≤ threshold
-        @inbounds vxc[i], exc[i] = 0, 0
-      else
-        @inbounds vxc[i], exc[i] = exch_fun(ρ[i]) .+ corr_fun(ρ[i])
-      end
+    @simd for i in eachindex(ρ)
+      @inbounds vxc[i], exc[i] = ρ[i] ≤ threshold ? (0, 0) : exch_fun(ρ[i]) .+ corr_fun(ρ[i])
     end
     return vxc, exc
   end

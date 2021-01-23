@@ -18,7 +18,18 @@ end
 function libxcfun(x::Symbol, c::Symbol, threshold = eps())
     fx, fc = Functional(x), Functional(c)
     fx.density_threshold = fc.density_threshold = threshold
-    function xc!(ρ, vxc, exc)
+
+    function xc_gga!(ρ, vxc, exc)
+        exch = evaluate(fx, rho = ρ, sigma = zero(ρ))
+        corr = evaluate(fc, rho = ρ, sigma = zero(ρ))
+        for i in eachindex(ρ)
+            vxc[i] = exch.vrho[i] + corr.vrho[i]
+            exc[i] = exch.zk[i]   + corr.zk[i]
+        end
+        return vxc, exc  
+    end
+
+    function xc_lda!(ρ, vxc, exc)
         exch = evaluate(fx, rho = ρ)
         corr = evaluate(fc, rho = ρ)
         for i in eachindex(ρ)
@@ -27,7 +38,19 @@ function libxcfun(x::Symbol, c::Symbol, threshold = eps())
         end
         return vxc, exc
     end
+
+    if     getproperty(fx, :family) == :gga && getproperty(fc, :family) == :gga
+        return xc_gga!
+    elseif getproperty(fx, :family) == :lda && getproperty(fc, :family) == :lda
+        return xc_lda!
+    else
+        throw(DomainError((x, c)))
+    end
 end 
+
+xc = (:lda_x, :lda_c_rpw92)
+xc = (:gga_x_pbe, :gga_c_pbe)
+lda(18, xc_func! = libxcfun(xc...)).energy.total
 
 function zoo(z)
     function is_lda_xc(x::Functional)
@@ -50,7 +73,7 @@ function zoo(z)
         intersect([:vxc, :exc], getproperty(x, :flags)) == [:vxc, :exc]
     end
 
-    xc_funcs = filter(is_lda_xc, Functional.(available_functionals()))
+    xc_funcs = [] # filter(is_lda_xc, Functional.(available_functionals()))
      c_funcs = filter(is_lda_c, Functional.(available_functionals()))
 
     ids_xc = map(λ -> (getproperty(λ, :identifier),), xc_funcs)

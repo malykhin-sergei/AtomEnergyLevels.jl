@@ -50,3 +50,34 @@ function FGH(x::AbstractRange)
   end
   return K
 end
+
+function sincdiff(x::AbstractRange)
+  n, dx = length(x), step(x)
+  ∇ = zeros(n, n)
+  ∇[diagind(∇, 0)] .= 0
+  for i = 2:n
+      @inbounds ∇[diagind(∇, i - 1)] .= (-1)^i / (i - 1) / dx
+      @inbounds ∇[diagind(∇, 1 - i)] .= (-1)^(i - 1) / (i - 1) / dx
+  end
+  return ∇
+end
+
+#=
+x=-35:0.1:5
+n = length(x)
+r = exp.(x)
+∇ρ = -2r ./ π .* exp.(-2r)
+ρ = 1/π .* exp.(-2r)
+
+∇ = sincdiff(x)
+D = ∇ - 1I
+#D = D[101:end,101:end]
+
+ρx = ρ .* r
+dρx = D * ρx
+
+map!(x -> ifelse(abs(x) > 1e-12, x, 0.0), dρx, dρx) 
+
+dρ = dρx ./ r 
+norm(dρ - ∇ρ)
+=#
