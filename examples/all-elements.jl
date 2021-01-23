@@ -64,4 +64,4 @@ function summary(E, N, it)
   @info @sprintf("Average number of iterations:\t%i", mean(it)) 
 end
 
-summary(test_all(10)...)
+summary(test_all(18)...)
