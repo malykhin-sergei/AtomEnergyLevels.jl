@@ -81,7 +81,7 @@ function lda(Z::Real,
   # Indices of the main diagonal
   D = 1:n+1:n*n 
 
-  H = -1/2μ*laplacian(x); HD = H[D]
+  H = -1/2μ*laplacian(x); K = H[D]
   S = copy(H)
   
   # Large grid for the Poisson equation
@@ -117,12 +117,12 @@ function lda(Z::Real,
     # Schrödinger equation
     ∑nᵢεᵢ = 0.0; ρₒᵤₜ .= 0.0
 
-    for (l, subshell) in enumerate(conf)
-      @. H[D] = HD   + V + 1/2μ * (l - 1/2)^2
+    for l=0:length(conf)-1
+      @. H[D] = K    + V + 1/2μ * (l + 1/2)^2
       @. S[D] = H[D] + Α * r²
       θ, y = eigen(Symmetric(H), Symmetric(S))
       @. ε = Α * θ / (1 - θ)
-      for (nᵣ, nᵢ) in enumerate(subshell)
+      for (nᵣ, nᵢ) in enumerate(conf[l+1])
         @views y[:, nᵣ] ./= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
         @views ρₒᵤₜ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
         ∑nᵢεᵢ += nᵢ * ε[nᵣ]

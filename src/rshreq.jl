@@ -69,16 +69,16 @@ function radial_shr_eq(V::AbstractArray,
   
   ψ = Dict()
   # the equation is solved separately for each subshell: s, p, d, f
-  for (l, subshell) in enumerate(conf)
-    @. H[D] = HD + 1/2μ * (l - 1/2)^2
+  for l=0:length(conf)-1
+    @. H[D] = HD + 1/2μ * (l + 1/2)^2
     @. @views S[D] = H[D] + Α * r²
     θ, y = eigen(Symmetric(H), Symmetric(S))
     @. ε = Α * θ / (1 - θ)
-    for (nᵣ, nᵢ) in enumerate(subshell)
+    for (nᵣ, nᵢ) in enumerate(conf[l+1])
       @views y[:, nᵣ] ./= sqrt(∫(dx, y[:, nᵣ] .^ 2 .* r²))
       @views ρ .+= nᵢ / 4π * y[:, nᵣ] .^ 2
       ∑nᵢεᵢ += nᵢ * ε[nᵣ]
-      ψ[(nᵣ = nᵣ - 1, l = l - 1)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
+      ψ[(nᵣ = nᵣ - 1, l = l)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
     end
   end
   return (energy = ∑nᵢεᵢ, density = ρ, orbitals = ψ)
