@@ -173,7 +173,7 @@ Compare with exact Kohn-Sham values from Table II of S. Kais et al
         TOTAL ENERGY                   2.0000
         VIRIAL RATIO                  -2.1486
 ```
-![Comparison of the exact Hooke's atom density with LDA numerical result](./examples/hooke_atom.png)
+![Comparison of the exact Hooke's atom density with LDA numerical result](./hooke_atom.png)
 
 ### Uranium atom
 
