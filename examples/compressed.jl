@@ -2,10 +2,10 @@ using AtomEnergyLevels
 using PyPlot
 pygui(true)
 
-function main(z, rgrid; config = atom[z], xcfun = xc_lda(LDA_X, LDA_C_VWN), n = 500)
+function main(z, rgrid; config = atom[z], xc = xc_func(), n = 500)
     x, en, HOMO = log.(rgrid), similar(rgrid), similar(rgrid)
     for (i, xmax) in enumerate(x)        
-        results = lda(z, range(-35, xmax, length = n), conf = config, xc_func! = xcfun)
+        results = lda(z, range(-35, xmax, length = n), conf = config, xc = xc)
         en[i] = results.energy.total
         HOMO[i] = maximum(map(λ -> λ[1], values(results.orbitals)))
     end
@@ -20,7 +20,7 @@ DOI:10.1103/PhysRevE.58.3949
 =#
 
 r = range(0.90, 6, length = 50)
-E, HOMO = main(2, r, config = c"[He]", xcfun = xc_lda(LDA_X, ρ -> 0))
+E, HOMO = main(2, r, config = c"[He]", xc = xc_func(xc_type_lda, false, LDA_X, ρ -> 0))
 
 begin
     title("Total energy of the helium atom for several confinements")
@@ -60,7 +60,7 @@ r = [2.2059, 2.2752, 2.3446, 2.4002, 2.4696, 2.5526,
      -1.04021, -1.03939, -1.04452, -1.04373, -1.04291, 
      -1.04208] # Ry
 
-E, HOMO = main(8, r, config = c"[He] 2s2 2p4", xcfun = xc_lda(ρ -> LDA_X(ρ, α = 1), ρ -> 0))
+E, HOMO = main(8, r, config = c"[He] 2s2 2p4", xc = xc_func(xc_type_lda, false, ρ -> LDA_X(ρ, α = 1), ρ -> 0))
 
 begin
     ax1 = PyPlot.axes()

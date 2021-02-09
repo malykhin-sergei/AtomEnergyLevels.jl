@@ -56,13 +56,15 @@ julia> lda(2, Vex = r -> 1/8 * r^2).energy.total
 function lda(Z::Real,
              x::AbstractRange = -35:0.1:5;             
           conf::Array{Array{T,1},1} = atom[Z],
-      xc_func!::Function = xc_lda(LDA_X, LDA_C_VWN),
+            xc::XC_Functional = xc_func(),
            Vex::Function = r -> -Z / r,
-            δn::Real = 1e-8,
+            δn::Real = sqrt(eps()),
          maxit::Integer = 100,
           xmax::Real = 25,
              Α::Real = 1e5) where T <: Real
   
+  xc_func! = xc.xc_func
+
   μ = 1    # electron mass, a.u.
   β = 0.8  # initial value of the density mixing parameter
 
