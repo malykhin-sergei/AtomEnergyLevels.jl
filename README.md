@@ -46,7 +46,7 @@ E(n) = ω*(n+1/2) - δ*(n+1/2)^2 - D;
 @testset "energies of the Morse potential" begin
   for i in 1:5
     @printf "Level %i: E(exact) = %5.10f E(approx) = %5.10f\n" i E(i-1) ϵ[i]
-    @test ϵ[i] ≈ E(i-1) atol = 1e-9
+    @test ϵ[i] ≈ E(i-1)
   end
 end
 ```
@@ -71,8 +71,8 @@ the levels of interest should be included in the electronic configuration
 ```julia
 using AtomEnergyLevels, Printf
 
-function isotropic_harmonic_oscillator(cfg)
-  ψ = radial_shr_eq(r -> 1/2*r^2, conf = conf_enc(cfg)).orbitals;
+function isotropic_harmonic_oscillator(config)
+  ψ = radial_shr_eq(r -> 1/2*r^2, conf = config).orbitals;
   @printf("\tϵ(calc.)\tϵ(exact)\tΔϵ\n");
   for (quantum_numbers, orbital) in sort(collect(ψ), by = x -> last(x).ϵᵢ)
     nᵣ, l = quantum_numbers
@@ -80,11 +80,11 @@ function isotropic_harmonic_oscillator(cfg)
     n = nᵣ + l + 1
     ϵ_exact = 2nᵣ + l + 3/2
     @printf("%i%s\t%10.8f\t%10.8f\t%+0.6e\n",
-            n, shells[l], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
+            n, shells[l+1], ϵ_calc, ϵ_exact, ϵ_exact - ϵ_calc)
   end
 end
 
-isotropic_harmonic_oscillator("1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1");
+isotropic_harmonic_oscillator(c"1s1 2s1 3s1 2p1 3p1 4p1 3d1 4d1 5d1");
 ```
 The output will be
 ```
@@ -119,8 +119,10 @@ r  = exp.(x);
 N² = 1 / (π^(3/2) * (8 + 5 * sqrt(π)));
 ρₑ = @. 2N² * exp(-1/2 * r^2) * (sqrt(π/2) * (7/4 + 1/4 * r^2 + (r + 1/r) * erf(r/sqrt(2))) + exp(-1/2 * r^2));
 
-xalpha = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2, xc! = (ρ, vxc, exc) -> Xα!(ρ, vxc, exc, α = 0.798));
-svwn5  = lda(2, x, conf = 2, Vex = r -> 1/8 * r^2);
+Xα(alpha = 1) = xc_func(xc_type_lda, false, ρ -> LDA_X(ρ, α = alpha), ρ -> 0)
+
+xalpha = lda(2, x, conf = c"[He]", Vex = r -> 1/8 * r^2, xc = Xα(0.798));
+svwn5  = lda(2, x, conf = c"[He]", Vex = r -> 1/8 * r^2);
 
 begin
     title("Hooke's atom density")
@@ -140,18 +142,20 @@ end
 ```
 LDA results output:
 ```
-[ Info: Using logarithmic 501 point grid with step dx = 0.1000
-[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
-[ Info: cycle           energy          |Δρ|
-[ Info:   0           2.103849      1.895566
-[ Info:   1           2.013080      0.357780
-[ Info:   2           2.023521      0.039644
-[ Info:   3           2.026081      0.003607
-[ Info:   4           2.026212      0.000404
-[ Info:   5           2.026228      0.000045
-[ Info:   6           2.026229      0.000005
-[ Info:   7           2.026229      0.000001
-[ Info:   8           2.026229      0.000000
+[ Info: A grid of 501 points x = -30.0000:0.1000:20.0000 is used
+[ Info: Starting SCF procedure with convergence threshold δn ≤ 1.490116e-08
+[ Info: cycle           energy          δn
+[ Info:   0           2.103849      1.89556590
+[ Info:   1           2.013080      0.35778036
+[ Info:   2           2.023521      0.03964354
+[ Info:   3           2.026081      0.00360748
+[ Info:   4           2.026212      0.00040386
+[ Info:   5           2.026228      0.00004527
+[ Info:   6           2.026229      0.00000518
+[ Info:   7           2.026229      0.00000060
+[ Info:   8           2.026229      0.00000007
+[ Info:   9           2.026229      0.00000001
+[ Info: SCF has converged after 9 iterations
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC               0.627459
 │       ELECTRON-ELECTRON              1.022579
@@ -205,39 +209,40 @@ end
 ```
 Output:
 ```
-[ Info: Using logarithmic 501 point grid with step dx = 0.1000
-[ Info: Starting SCF procedure with convergence threshold |Δρ| ≤ 1.000000e-07
-[ Info: cycle           energy          |Δρ|
-[ Info:   0      -25892.940688     13.946827
-[ Info:   1      -25392.907465      9.142395
-[ Info:   2      -25839.860895      7.440384
-[ Info:   3      -25734.593283      3.920120
-[ Info:   4      -25654.245863      1.816286
-[ Info:   5      -25662.380950      0.745344
-[ Info:   6      -25661.726995      0.682063
-[ Info:   7      -25657.713231      0.260715
-[ Info:   8      -25659.149922      0.072949
-[ Info:   9      -25658.990090      0.064592
-[ Info:  10      -25658.353079      0.033047
-[ Info:  11      -25658.437031      0.016313
-[ Info:  12      -25658.433437      0.014779
-[ Info:  13      -25658.411140      0.003996
-[ Info:  14      -25658.423601      0.000965
-[ Info:  15      -25658.422312      0.000868
-[ Info:  16      -25658.417277      0.000458
-[ Info:  17      -25658.417935      0.000233
-[ Info:  18      -25658.417919      0.000211
-[ Info:  19      -25658.417827      0.000056
-[ Info:  20      -25658.417919      0.000013
-[ Info:  21      -25658.417912      0.000012
-[ Info:  22      -25658.417883      0.000007
-[ Info:  23      -25658.417887      0.000003
-[ Info:  24      -25658.417887      0.000003
-[ Info:  25      -25658.417888      0.000001
-[ Info:  26      -25658.417889      0.000000
-[ Info:  27      -25658.417889      0.000000
-[ Info:  28      -25658.417888      0.000000
-[ Info:  29      -25658.417889      0.000000
+[ Info: A grid of 501 points x = -30.0000:0.1000:20.0000 is used
+[ Info: Starting SCF procedure with convergence threshold δn ≤ 1.490116e-08
+[ Info: cycle           energy          δn
+[ Info:   0      -25892.940688     13.94682700
+[ Info:   1      -25392.907488      9.14239485
+[ Info:   2      -25958.273128     10.84751085
+[ Info:   3      -25323.130397     13.21089613
+[ Info:   4      -26013.215074     13.11048291
+[ Info:   5      -25360.517609     11.72644312
+[ Info:   6      -25650.759429      4.29309894
+[ Info:   7      -25662.547556      1.93857182
+[ Info:   8      -25660.046452      0.76699314
+[ Info:   9      -25658.557814      0.24604636
+[ Info:  10      -25658.398334      0.03850339
+[ Info:  11      -25658.437820      0.00531584
+[ Info:  12      -25658.394604      0.00138062
+[ Info:  13      -25658.399835      0.00115990
+[ Info:  14      -25658.417355      0.00041016
+[ Info:  15      -25658.417852      0.00023405
+[ Info:  16      -25658.417853      0.00021146
+[ Info:  17      -25658.417854      0.00019107
+[ Info:  18      -25658.417855      0.00017267
+[ Info:  19      -25658.417857      0.00015605
+[ Info:  20      -25658.417858      0.00014105
+[ Info:  21      -25658.417859      0.00012749
+[ Info:  22      -25658.417861      0.00011525
+[ Info:  23      -25658.417874      0.00001674
+[ Info:  24      -25658.417887      0.00000285
+[ Info:  25      -25658.417890      0.00000071
+[ Info:  26      -25658.417887      0.00000031
+[ Info:  27      -25658.417889      0.00000005
+[ Info:  28      -25658.417888      0.00000003
+[ Info:  29      -25658.417889      0.00000001
+[ Info: SCF has converged after 29 iterations
 ┌ Info: RESULTS SUMMARY:
 │       ELECTRON KINETIC           25651.231179
 │       ELECTRON-ELECTRON           9991.594177
