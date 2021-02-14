@@ -1,56 +1,55 @@
 using AtomEnergyLevels, Libxc, Printf
 
-function libxcfun(xc::Symbol, threshold = eps())
+function libxcfun(xc::Symbol)
     fxc = Functional(xc)
+
     if getproperty(fxc, :kind) ≠ :exchange_correlation
         throw(DomainError(getproperty(fxc, :identifier), "is not an exchange-correlation functional"))
     end
-    fxc.density_threshold = threshold
-    function xc!(ρ, vxc, exc)
-        xc = evaluate(fxc, rho = ρ)
-        for i in eachindex(ρ)
-            @inbounds vxc[i], exc[i] = xc.vrho[i], xc.zk[i]
+
+    function xc_lda(ρ, vxc = similar(ρ), exc = similar(ρ))
+        if !(length(ρ) == length(vxc) == length(exc))
+            throw(DimensionMismatch("Dimensions of the arrays ρ, vxc, and exc doesn't match"))
         end
+        evaluate!(fxc, rho = ρ, vrho = vxc, zk = exc)
         return vxc, exc
+    end
+
+    if getproperty(fxc, :family) == :lda
+        return XC_Functional(xc_type_lda, xc_lda)
+    else
+        return nothing
     end
 end
 
-function libxcfun(x::Symbol, c::Symbol, threshold = eps())
+function libxcfun(x::Symbol, c::Symbol)
     fx, fc = Functional(x), Functional(c)
-    fx.density_threshold = fc.density_threshold = threshold
 
-    function xc_gga!(ρ, vxc, exc)
-        exch = evaluate(fx, rho = ρ, sigma = zero(ρ))
-        corr = evaluate(fc, rho = ρ, sigma = zero(ρ))
-        for i in eachindex(ρ)
+    if getproperty(fx, :kind) ≠ :exchange || getproperty(fc, :kind) ≠ :correlation
+        throw(DomainError(getproperty(fxc, :identifier), "is not an exchange-correlation functional"))
+    end
+
+    function xc_lda(ρ, vxc = similar(ρ), exc = similar(ρ))
+        if !(length(ρ) == length(vxc) == length(exc))
+            throw(DimensionMismatch("Dimensions of the arrays ρ, vxc, and exc doesn't match"))
+        end
+        exch = evaluate(fx, rho = ρ)
+        corr = evaluate(fc, rho = ρ)
+        @inbounds for i in eachindex(ρ)
             vxc[i] = exch.vrho[i] + corr.vrho[i]
             exc[i] = exch.zk[i]   + corr.zk[i]
         end
         return vxc, exc  
     end
 
-    function xc_lda!(ρ, vxc, exc)
-        exch = evaluate(fx, rho = ρ)
-        corr = evaluate(fc, rho = ρ)
-        for i in eachindex(ρ)
-            vxc[i] = exch.vrho[i] + corr.vrho[i]
-            exc[i] = exch.zk[i]   + corr.zk[i]
-        end
-        return vxc, exc
-    end
-
-    if     getproperty(fx, :family) == :gga && getproperty(fc, :family) == :gga
-        return xc_gga!
-    elseif getproperty(fx, :family) == :lda && getproperty(fc, :family) == :lda
-        return xc_lda!
+    if getproperty(fx, :family) == :lda && getproperty(fc, :family) == :lda
+        return XC_Functional(xc_type_lda, xc_lda)
     else
-        throw(DomainError((x, c)))
+        return nothing
     end
-end 
+end
 
-xc = (:lda_x, :lda_c_rpw92)
-xc = (:gga_x_pbe, :gga_c_pbe)
-lda(18, xc_func! = libxcfun(xc...)).energy.total
+lda(2, xc = libxcfun(:lda_x, :lda_c_vwn))
 
 function zoo(z)
     function is_lda_xc(x::Functional)
@@ -84,7 +83,7 @@ function zoo(z)
     for xc in vcat(ids_xc, ids_c)
         @printf("Testing %s\n", string(xc))
         try
-            push!(energies, lda(z, xc_func! = libxcfun(xc...)).energy.total)
+            push!(energies, lda(z, xc = libxcfun(xc...)).energy.total)
         catch
             push!(energies, NaN)
             continue
