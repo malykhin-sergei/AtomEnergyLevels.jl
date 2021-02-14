@@ -3,7 +3,9 @@ module AtomEnergyLevels
 import LinearAlgebra: Symmetric, eigen, diagind, I 
 import Printf: @sprintf
 
-include("integrate.jl")
+# rectangle rule for integration is accurate enough
+@inline ∫(h, f) = h*sum(f)
+
 include("sincdif.jl")
 include("conf_parse.jl")
 include("periodic_table.jl")
