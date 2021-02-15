@@ -1,3 +1,20 @@
+function extrapolate_left!(f, r, rₘᵢₙ = 1e-7)
+  m = 2
+  for i in eachindex(r)
+      if r[i] ≥ rₘᵢₙ
+          m = i
+          break
+      end
+  end
+  tg = ((f[m-1] - f[m])*(r[m+1] - r[m])^2 - (f[m+1] - f[m])*(r[m-1] - r[m])^2) / 
+       ((r[m+1] - r[m])*(r[m-1] - r[m])*(r[m+1] - r[m-1]))
+  f0 = f[m] - tg*r[m]
+  for i=1:m-1
+      f[i] = tg*r[i] + f0
+  end
+  return m, tg, f0        
+end
+
 """
     radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange{T} = -30.0:0.1:5.0;
     conf = 1, μ = 1.0, α = 1e5) where {T}
@@ -49,7 +66,7 @@ true
 ```
 """
 function radial_shr_eq(V::AbstractArray, 
-                       x::AbstractRange = -30.0:0.1:5.0; 
+                       x::AbstractRange = -35.0:0.1:5.0; 
                     conf::Array{Array{T,1},1} = [[1]], 
                        μ::Real = 1, 
                        Α::Real = 1e5) where T <: Real
@@ -81,7 +98,10 @@ function radial_shr_eq(V::AbstractArray,
       ψ[(nᵣ = nᵣ - 1, l = l)] = (ϵᵢ = ε[nᵣ], nᵢ = nᵢ, ψᵢ = y[:, nᵣ])
     end
   end
+  @. ρ /= r
+  extrapolate_left!(ρ, r)
+  @. ρ *= r
   return (energy = ∑nᵢεᵢ, density = ρ, orbitals = ψ)
 end
-radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange = -30.0:0.1:5.0; conf = 1, μ = 1, Α = 1e5) = 
+radial_shr_eq(V::Function = r -> -1/r, x::AbstractRange = -35.0:0.1:5.0; conf = 1, μ = 1, Α = 1e5) = 
               radial_shr_eq(V.(exp.(x)), x, conf = conf, μ = μ, Α = Α)
