@@ -62,22 +62,19 @@ function sincdiff(x::AbstractRange)
   return ∇
 end
 
+function ∂r(f, x, r = exp.(x), D = sincdiff(x) - I, rₘᵢₙ = 5e-5)
+  df = D * (f .* r)
+  @. df /= r^2
+  extrapolate_left!(df, r, rₘᵢₙ)
+  return df
+end
+
 #=
-x=-35:0.1:5
-n = length(x)
-r = exp.(x)
-∇ρ = -2r ./ π .* exp.(-2r)
-ρ = 1/π .* exp.(-2r)
+ ρ = similar(r)
+∇ρ = similar(r)
 
-∇ = sincdiff(x)
-D = ∇ - 1I
-#D = D[101:end,101:end]
+@. ρ = (2/27*r^2 - 2/3*r + 1)^2 * exp(-2/3*r) / 27π
+@. ∇ρ = -(8*r^4 - 192*r^3 + 1512*r^2 - 4536r + 4374)*exp(-2/3*r) / 59049π
 
-ρx = ρ .* r
-dρx = D * ρx
-
-map!(x -> ifelse(abs(x) > 1e-12, x, 0.0), dρx, dρx) 
-
-dρ = dρx ./ r 
-norm(dρ - ∇ρ)
+norm(∂r(ρ, x) .- ∇ρ)
 =#
